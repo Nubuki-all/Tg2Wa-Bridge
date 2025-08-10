@@ -48,11 +48,13 @@ def user_is_owner(user: str | int):
     return user in conf.OWNER
 
 
-CLEANR = re.compile('<.*?>|&([a-z0-9]+|#[0-9]{1,6}|#x[0-9a-f]{1,6});')
+CLEANR = re.compile("<.*?>|&([a-z0-9]+|#[0-9]{1,6}|#x[0-9a-f]{1,6});")
+
 
 def cleanhtml(raw_html):
-  cleantext = re.sub(CLEANR, '', raw_html)
-  return cleantext
+    cleantext = re.sub(CLEANR, "", raw_html)
+    return cleantext
+
 
 async def get_user_info(
     user_id: str | None = None,

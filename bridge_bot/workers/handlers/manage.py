@@ -486,6 +486,7 @@ inactive_reddit_client_err = (
     "set the required envs then restart!"
 )
 
+
 async def subscribe_subreddit(event, args, client):
     """
     Subscribe to the specified telegram chat
@@ -549,9 +550,9 @@ async def unsubscribe_subreddit(event, args, client):
         if not user_is_owner(user_id):
             return
         args = args.lower()
-        if not (subscribed := bot.group_dict.setdefault("subscribed_subreddits", {})).get(
-            args
-        ):
+        if not (
+            subscribed := bot.group_dict.setdefault("subscribed_subreddits", {})
+        ).get(args):
             return await event.reply(f"*Specified subscription does not exist!*")
         sub_name = subscribed[args]["name"]
         y = "Yes"
@@ -604,9 +605,9 @@ async def add_subreddit_subscriber(event, args, client):
             )
         args = args.lower()
         if not (
-            subscribed_info := bot.group_dict.setdefault("subscribed_subreddits", {}).get(
-                args
-            )
+            subscribed_info := bot.group_dict.setdefault(
+                "subscribed_subreddits", {}
+            ).get(args)
         ):
             return await event.reply(f"*Specified subscription does not exist!*")
         wa_chat_id = arg.id if arg.id != "." else event.chat.id
@@ -643,9 +644,9 @@ async def remove_subreddit_subscriber(event, args, client):
             )
         args = args.lower()
         if not (
-            subscribed_info := bot.group_dict.setdefault("subscribed_subreddits", {}).get(
-                args
-            )
+            subscribed_info := bot.group_dict.setdefault(
+                "subscribed_subreddits", {}
+            ).get(args)
         ):
             return await event.reply(f"*Specified subscription does not exist!*")
         wa_chat_id = arg.id if arg.id != "." else event.chat.id
@@ -670,15 +671,17 @@ async def edit_subreddit_subscription(event, args, client):
             return await event.reply(inactive_reddit_client_err)
         args = args.lower()
         if not (
-            subscribed_info := bot.group_dict.setdefault("subscribed_subreddits", {}).get(
-                args
-            )
+            subscribed_info := bot.group_dict.setdefault(
+                "subscribed_subreddits", {}
+            ).get(args)
         ):
             return await event.reply(f"*Specified subscription does not exist!*")
         try:
             sub.name
         except Redirect:
-            return await event.reply("Specified subreddit does not exist/has been deleted!")
+            return await event.reply(
+                "Specified subreddit does not exist/has been deleted!"
+            )
         sub_name = sub.display_name
         f = "Add a chat"
         s = "Remove a chat"
@@ -825,7 +828,7 @@ def add_manage_handlers():
         "unsubscribe",
         require_args=True,
     )
-    
+
     bot.add_handler(
         add_subreddit_subscriber,
         "add2rsub",

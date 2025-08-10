@@ -1,6 +1,5 @@
 import asyncio
 
-from neonize.utils.ffmpeg import AFFmpeg
 from telethon import events
 
 from bridge_bot import bot, heavy_proc_lock, jid
@@ -10,7 +9,6 @@ from bridge_bot.utils.media_utils import (
     all_vid_streams_avc,
     convert_to_avc,
     convert_to_wa_sticker,
-    is_mp3_audio,
 )
 from bridge_bot.utils.msg_store import (
     delete_message,
@@ -545,7 +543,11 @@ async def relay_delete(event, wa_chat_id):
             wa_msg = construct_message(
                 wa_chat_id, user_jid.User, msg.wa_id, None, "g.us", user_jid.Server, Msg
             )
-            await bot.client.reply_message("⚠️ *This message has been deleted!*", wa_msg, to=jid.build_jid(wa_chat_id, "g.us"))
+            await bot.client.reply_message(
+                "⚠️ *This message has been deleted!*",
+                wa_msg,
+                to=jid.build_jid(wa_chat_id, "g.us"),
+            )
             status = await delete_message(wa_chat_id, chat_id, msg_id)
             if not status:
                 await logger(

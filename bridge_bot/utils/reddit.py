@@ -1,4 +1,5 @@
 import asyncio
+
 from bridge_bot import jid
 from bridge_bot.conf import bot, conf
 
@@ -6,6 +7,7 @@ from .bot_utils import sync_to_async
 from .db_utils import save2db2
 from .log_utils import log, logger
 from .msg_utils import cleanhtml
+
 
 def process_submission(submission):
     caption = ""
@@ -27,12 +29,14 @@ def process_submission(submission):
     if submission.selftext_html:
         caption += f"\n{cleanhtml(submission.selftext_html)}"
     return image, caption, submission.over_18
-    
+
 
 async def forward_submission(data, chat):
     image, caption, nsfw = data
     if image:
-        await bot.client.send_image(jid.build_jid(chat, "g.us"), image, caption, viewonce=nsfw)
+        await bot.client.send_image(
+            jid.build_jid(chat, "g.us"), image, caption, viewonce=nsfw
+        )
     else:
         await bot.send_message(jid.build_jid(chat, "g.us"), caption)
 
@@ -46,7 +50,8 @@ async def forward_submissions(submissions, chats):
             await asyncio.sleep(1)
     except Exception:
         await logger(Exception)
-        
+
+
 def fetch_latest_for_subreddit(sub_name, sub_info):
     submissions = []
     try:

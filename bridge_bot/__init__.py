@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import os
-import praw
 import re
 import shlex
 import subprocess
@@ -13,6 +12,7 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from urllib.parse import urlparse
 
+import praw
 from colorlog import ColoredFormatter
 from neonize.aioze.client import NewAClient
 from neonize.events import (
@@ -114,8 +114,10 @@ LOGS.info("Starting...")
 init_reddit = False
 try:
     if conf.R_CLI_ID or conf.R_CLI_SECRET or conf.R_USER_NAME:
-        if not(conf.R_CLI_ID and conf.R_CLI_SECRET and conf.R_USER_NAME):
-            LOGS.warning("Missing a required env for Reddit, skipping initializing for the Reddit client.")
+        if not (conf.R_CLI_ID and conf.R_CLI_SECRET and conf.R_USER_NAME):
+            LOGS.warning(
+                "Missing a required env for Reddit, skipping initializing for the Reddit client."
+            )
         else:
             init_reddit = True
     if init_reddit:
