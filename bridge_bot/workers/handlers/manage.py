@@ -531,7 +531,11 @@ async def subscribe_subreddit(event, args, client):
         info = button_dict.get(results[0])
         if not info[0] == y:
             return await event.reply("*Operation Cancelled!*")
-        subscribed.update({args: {"chats": [], "name": sub_name}})
+        last_id = ""
+        latest_submission = sub.new(limit=1):
+        if latest_submission:
+            last_id = latest_submission[0].id
+        subscribed.update({args: {"chats": [], "name": sub_name, "last_id": last_id}})
         await save2db2(bot.group_dict, "groups")
         await event.reply(f"*Subscribed to {sub_name} successfully!*")
     except Exception as e:
