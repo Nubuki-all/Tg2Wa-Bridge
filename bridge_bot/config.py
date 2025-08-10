@@ -22,6 +22,10 @@ class Config:
             self.DEV = config("DEV", default="")
             self.DYNO = config("DYNO", default=None)
             self.FS_THRESHOLD = config("FLOOD_SLEEP_THRESHOLD", default=600, cast=int)
+            self.R_CLI_ID = config("REDDIT_CLIENT_ID", default="")
+            self.R_CLI_SECRET = config("REDDIT_CLIENT_SECRET", default="")
+            self.REDDIT_SLEEP = config("REDDIT_SLEEP", default=60, cast=int)
+            self.R_USER_NAME = config("REDDIT_USERNAME", default="")
             self.UB_REC_EVENTS = config("UB_REC_EVENTS", default=False, cast=bool)
             self.LOG_GROUP = config("LOG_GROUP", default="")
             self.OWNER = config("OWNER")
@@ -42,6 +46,7 @@ class Runtime_Config:
         self.is_connected = False
         self.max_message_length = 4096
         self.repo_branch = None
+        self.reddit = None
         self.tg_client = None
         self.tg_client2 = None
         self.tg_client_ids = []

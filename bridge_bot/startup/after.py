@@ -6,6 +6,7 @@ from bridge_bot.fun.quips import enquip, enquip2
 from bridge_bot.utils.log_utils import logger
 from bridge_bot.utils.msg_store import initialize_all_sessions
 from bridge_bot.utils.msg_utils import send_presence
+from bridge_bot.utils.reddit import auto_fetch_reddit_posts
 
 
 async def onrestart():
@@ -88,6 +89,7 @@ async def on_startup():
         else:
             await onstart(f"*I'm {enquip()} {enmoji()}*")
         asyncio.create_task(update_presence())
+        asyncio.create_task(auto_fetch_reddit_posts())
         LOGS.info("Bot has started.")
     except Exception:
         await logger(Exception)

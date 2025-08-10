@@ -19,7 +19,7 @@ from bridge_bot.utils.msg_store import (
     save_message,
 )
 from bridge_bot.utils.msg_utils import (
-    construct_msg_and_evt,
+    construct_message,
     conv_tgmd_to_wamd,
     get_subscription_header,
     get_tg_edit_data,
@@ -178,7 +178,6 @@ async def forward_gif(event, wa_chat_id, gif):
                 quoted=wa_msg,
                 gifplayback=True,
                 is_gif=True,
-                mentions_are_lids=True,
             )
             if not up_as_doc
             else await bot.client.send_document(
@@ -255,7 +254,6 @@ async def forward_vid(event, wa_chat_id, vid):
                 vid,
                 text,
                 quoted=wa_msg,
-                mentions_are_lids=True,
             )
             if not up_as_doc
             else await bot.client.send_document(
@@ -274,28 +272,6 @@ async def forward_vid(event, wa_chat_id, vid):
         return
     except Exception:
         await logger(Exception)
-
-
-async def send_audio(audio, wa_jid=None, ptt=False, event=None):
-    async with AFFmpeg(audio) as ffmpeg:
-        if not await is_mp3_audio(ffmpeg.filepath):
-            audio = await ffmpeg.to_mp3()
-    if event:
-        return await event.reply(audio, ptt)
-    resp = await bot.client.send_audio(wa_jid, audio, ptt)
-    user_jid = bot.client.me.JID
-    return (
-        construct_msg_and_evt(
-            wa_jid.User,
-            user_jid.User,
-            resp.ID,
-            None,
-            "g.us",
-            user_jid.Server,
-            resp.Message,
-        ),
-        resp,
-    )
 
 
 async def forward_audios(event):
@@ -357,7 +333,7 @@ async def forward_audio(event, wa_chat_id, audio):
             user_jid.Server,
             rep.Message,
         )
-        await bot.client.reply_message(text, wa_msg_, to=wa_jid, mentions_are_lids=True)
+        await bot.client.reply_message(text, wa_msg_, to=wa_jid)
     except Exception:
         await logger(Exception)
 
@@ -402,7 +378,7 @@ async def forward_doc(event, wa_chat_id, doc):
                 wa_chat_id, user_jid.User, msg.wa_id, None, "g.us", user_jid.Server, Msg
             )
         rep = await bot.client.send_document(
-            wa_jid, doc, text, event.file.name, quoted=wa_msg, mentions_are_lids=True
+            wa_jid, doc, text, event.file.name, quoted=wa_msg
         )
         return await save_message(
             wa_chat_id,
@@ -480,7 +456,7 @@ async def forward_sticker(event, wa_chat_id, sticker):
             user_jid.Server,
             rep.Message,
         )
-        await bot.client.reply_message(text, wa_msg_, to=wa_jid, mentions_are_lids=True)
+        await bot.client.reply_message(text, wa_msg_, to=wa_jid)
     except Exception:
         await logger(Exception)
 
@@ -566,10 +542,10 @@ async def relay_delete(event, wa_chat_id):
                 continue
             Msg = load_proto(msg.raw)
             user_jid = load_proto(msg.raw_user, True)
-            wa_event = construct_msg_and_evt(
+            wa_msg = construct_message(
                 wa_chat_id, user_jid.User, msg.wa_id, None, "g.us", user_jid.Server, Msg
             )
-            await wa_event.reply("⚠️ *This message has been deleted!*")
+            await bot.client.reply_message("⚠️ *This message has been deleted!*", wa_msg, to=jid.build_jid(wa_chat_id, "g.us"))
             status = await delete_message(wa_chat_id, chat_id, msg_id)
             if not status:
                 await logger(

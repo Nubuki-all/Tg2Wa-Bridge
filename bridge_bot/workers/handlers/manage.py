@@ -3,6 +3,8 @@ import itertools
 import time
 import uuid
 
+from prawcore.exceptions import Redirect
+
 from bridge_bot import bot, conf
 from bridge_bot.utils.bot_utils import (
     DummyListener,
@@ -479,11 +481,287 @@ async def list_subscriptions(event, args, client):
         await logger(Exception)
 
 
+inactive_reddit_client_err = (
+    "Error: Reddit client has not been initialized, "
+    "set the required envs then restart!"
+)
+
+async def subscribe_subreddit(event, args, client):
+    """
+    Subscribe to the specified telegram chat
+    Argument:
+        Subreddit : Reddit subreddit to subscribe to.
+    """
+    try:
+        user_id = event.from_user.id
+        if not user_is_owner(user_id):
+            return
+        if not bot.reddit:
+            return await event.reply(inactive_reddit_client_err)
+        args = args.lower()
+        subscribed = bot.group_dict.setdefault("subscribed_subreddits", {})
+        if subscribed.get(args):
+            return await event.reply(
+                f"Specified subreddit has already been subscribed to, edit the subscription instead"
+            )
+        sub = bot.reddit.subreddit(args)
+        try:
+            sub.name
+        except Redirect:
+            return await event.reply("Specified subreddit does not exist!")
+        sub_name = sub.display_name
+        y = "Yes"
+        n = "No"
+        button_dict = {
+            uuid.uuid4(): [y, y],
+            uuid.uuid4(): [n, n],
+        }
+        text = f"Subscribe to {sub_name}?"
+        poll_msg = await create_sudo_button(
+            text, button_dict, event.chat.jid, user_id, 1, None, event.message
+        )
+        dl_poll_msg = bot.client.revoke_message(
+            event.chat.jid, bot.client.me.JID, poll_msg.ID
+        )
+        if not (results := await wait_for_button_response(poll_msg.ID)):
+            await dl_poll_msg
+            return await event.reply("Yh, I'm done waiting.")
+        await dl_poll_msg
+        info = button_dict.get(results[0])
+        if not info[0] == y:
+            return await event.reply("*Operation Cancelled!*")
+        subscribed.update({args: {"chats": [], "name": sub_name}})
+        await save2db2(bot.group_dict, "groups")
+        await event.reply(f"*Subscribed to {sub_name} successfully!*")
+    except Exception as e:
+        await logger(Exception)
+        await event.reply(f"*Error:* {e}")
+
+
+async def unsubscribe_subreddit(event, args, client):
+    """
+    Fully unsubscribes the specified subreddit!
+    Argument:
+        Subreddit : Subreddit to unsubscribe.
+    """
+    try:
+        user_id = event.from_user.id
+        if not user_is_owner(user_id):
+            return
+        args = args.lower()
+        if not (subscribed := bot.group_dict.setdefault("subscribed_subreddits", {})).get(
+            args
+        ):
+            return await event.reply(f"*Specified subscription does not exist!*")
+        sub_name = subscribed[args]["name"]
+        y = "Yes"
+        n = "No"
+        button_dict = {
+            uuid.uuid4(): [y, y],
+            uuid.uuid4(): [n, n],
+        }
+        text = f"Fully unsubscribe {sub_name}?\n"
+        poll_msg = await create_sudo_button(
+            text, button_dict, event.chat.jid, user_id, 1, None, event.message
+        )
+        dl_poll_msg = bot.client.revoke_message(
+            event.chat.jid, bot.client.me.JID, poll_msg.ID
+        )
+        if not (results := await wait_for_button_response(poll_msg.ID)):
+            await dl_poll_msg
+            return await event.reply("Yh, I'm done waiting.")
+        await dl_poll_msg
+        info = button_dict.get(results[0])
+        if not info[0] == y:
+            return await event.reply("*Operation Cancelled!*")
+        subscribed.pop(args)
+        await save2db2(bot.group_dict, "groups")
+        await event.reply(f"*Unsubscribed from {sub_name} successfully!*")
+    except Exception as e:
+        await logger(Exception)
+        await event.reply(f"*Error:* {e}")
+
+
+async def add_subreddit_subscriber(event, args, client):
+    """
+    Add a chat to a subscribed telegram chat
+    Argument:
+        Subreddit : Reddit subreddit (Previously subscribed subreddit)
+        -id WA_CHAT_ID: Whatsapp chat_id or . for current chat
+    """
+    try:
+        user_id = event.from_user.id
+        if not user_is_owner(user_id):
+            return
+        arg, args = get_args(
+            "-id",
+            to_parse=args,
+            get_unknown=True,
+        )
+        if not arg.id:
+            return await event.reply(
+                "Please supply a Whatsapp group id with the -id flag"
+            )
+        args = args.lower()
+        if not (
+            subscribed_info := bot.group_dict.setdefault("subscribed_subreddits", {}).get(
+                args
+            )
+        ):
+            return await event.reply(f"*Specified subscription does not exist!*")
+        wa_chat_id = arg.id if arg.id != "." else event.chat.id
+        if wa_chat_id in (chats := subscribed_info.get("chats")):
+            return await event.reply("Chat has already been Added.")
+        chats.append(wa_chat_id)
+        await save2db2(bot.group_dict, "groups")
+        await event.reply(
+            f"*Successfully added @{wa_chat_id}@g.us to subscription: {subscribed_info.get('name')}!*"
+        )
+    except Exception:
+        await logger(Exception)
+
+
+async def remove_subreddit_subscriber(event, args, client):
+    """
+    Removes a chat from a subscribed telegram chat
+    Argument:
+        Subreddit : Reddit subreddit (Previously subscribed subreddit)
+        -id WA_CHAT_ID: Whatsapp chat_id or . for current chat
+    """
+    try:
+        user_id = event.from_user.id
+        if not user_is_owner(user_id):
+            return
+        arg, args = get_args(
+            "-id",
+            to_parse=args,
+            get_unknown=True,
+        )
+        if not arg.id:
+            return await event.reply(
+                "Please supply a Whatsapp group id with the -id flag"
+            )
+        args = args.lower()
+        if not (
+            subscribed_info := bot.group_dict.setdefault("subscribed_subreddits", {}).get(
+                args
+            )
+        ):
+            return await event.reply(f"*Specified subscription does not exist!*")
+        wa_chat_id = arg.id if arg.id != "." else event.chat.id
+        if wa_chat_id not in (chats := subscribed_info.get("chats")):
+            return await event.reply("Chat has already been removed or wasn't added.")
+        chats.remove(wa_chat_id)
+        await save2db2(bot.group_dict, "groups")
+        await event.reply(
+            f"*Successfully removed @{wa_chat_id}@g.us from subscription: {subscribed_info.get('name')}!*"
+        )
+    except Exception:
+        await logger(Exception)
+
+
+async def edit_subreddit_subscription(event, args, client):
+    """Edit a subreddit subscription;"""
+    try:
+        user_id = event.from_user.id
+        if not user_is_owner(user_id):
+            return
+        if not bot.reddit:
+            return await event.reply(inactive_reddit_client_err)
+        args = args.lower()
+        if not (
+            subscribed_info := bot.group_dict.setdefault("subscribed_subreddits", {}).get(
+                args
+            )
+        ):
+            return await event.reply(f"*Specified subscription does not exist!*")
+        try:
+            sub.name
+        except Redirect:
+            return await event.reply("Specified subreddit does not exist/has been deleted!")
+        sub_name = sub.display_name
+        f = "Add a chat"
+        s = "Remove a chat"
+        t = "Cancel"
+        button_dict = {
+            uuid.uuid4(): [f, add_subreddit_subscriber],
+            uuid.uuid4(): [s, remove_subreddit_subscriber],
+            uuid.uuid4(): [t, t],
+        }
+        text = f"Choose an action for subscription: {sub_name}"
+        poll_msg = await create_sudo_button(
+            text, button_dict, event.chat.jid, user_id, 1, None, event.message
+        )
+        dl_poll_msg = bot.client.revoke_message(
+            event.chat.jid, bot.client.me.JID, poll_msg.ID
+        )
+        if not (results := await wait_for_button_response(poll_msg.ID)):
+            await dl_poll_msg
+            return await event.reply("Yh, I'm done waiting.")
+        await dl_poll_msg
+        info = button_dict.get(results[0])
+        if info[0] == t:
+            return await event.reply("*Operation Cancelled!*")
+        if info[0] == s:
+            text = get_list_of_added_chats(subscribed_info)
+            await event.reply(text) if text else None
+        text = "*Reply this message with the WhatsApp group id of chat to add/remove*\n_Also accepts '.' to specify current chat_"
+        rep = await event.reply(text)
+        listener = DummyListener()
+
+        async def get_reply(event, _, __):
+            if not ((replied := event.reply_to_message) and replied.id == rep.id):
+                return
+            if event.from_user.id != user_id:
+                return
+            if event.is_actual_media:
+                return await event.reply("why?")
+            if not (text := event.text):
+                return
+            listener.response = text
+
+        key = bot.add_handler(get_reply)
+        s_time = time.time()
+        while (time.time() - s_time) < 60:
+            if listener.response:
+                bot.unregister(key)
+                await rep.delete()
+                break
+            await asyncio.sleep(1)
+        else:
+            bot.unregister(key)
+            await rep.delete()
+            return await rep.reply("Operation Time out")
+        await info[1](event, f"{args} -id {listener.response}", client)
+    except Exception:
+        await logger(Exception)
+
+
+async def list_subreddit_subscriptions(event, args, client):
+    "Lists all subreddit subscriptions"
+    try:
+        user_id = event.from_user.id
+        if not user_is_owner(user_id):
+            return
+        msg = ""
+        subscribed = bot.group_dict.setdefault("subscribed_subreddits", {})
+        for i, sub in zip(itertools.count(1), subscribed):
+            msg += f"{i}. {sub}"
+            msg += "\n"
+        if not msg:
+            return await event.reply("No subscriptions!")
+        msg = "*List of subscribed subreddits:*\n" + msg
+        await event.reply(msg)
+    except Exception:
+        await logger(Exception)
+
+
 async def manage(event, args, client):
     """Lists commands from the manage module"""
     try:
         pre = conf.CMD_PREFIX
         msg = (
+            "*#Telegram*\n"
             f"{pre}bridge - *Bridge a chat*\n"
             f"{pre}unbridge - *Un-Bridge a chat*\n"
             f"{pre}add2sub - *Add a chat to an existing subscription*\n"
@@ -491,6 +769,13 @@ async def manage(event, args, client):
             f"{pre}rm_sub - *Remove a chat from an existing subscription*\n"
             f"{pre}subscribe - *Subscribe to a Telegram chat*\n"
             f"{pre}unsubscribe - *Unsubscribe from a Telegram chat*\n"
+            "\n*#Reddit:*\n"
+            f"{pre}add2rsub - *Add a chat to an existing subreddit subscription*\n"
+            f"{pre}edit_rsub - *Edit an existing subreddit subscription*\n"
+            f"{pre}rm_rsub - *Remove a chat from an existing subreddit subscription*\n"
+            f"{pre}rsubscribe - *Subscribe to a Subreddit*\n"
+            f"{pre}runsubscribe - *Unsubscribe from a Subreddit*\n"
+            "\n*#Restart:*\n"
             f"{pre}restart - *Restarts bot*\n"
             f"{pre}update - *Update & restarts bot*\n"
             "\n*All above commands are restricted to the [Owner] permission class.*"
@@ -538,5 +823,31 @@ def add_manage_handlers():
     bot.add_handler(
         unsubscribe,
         "unsubscribe",
+        require_args=True,
+    )
+    
+    bot.add_handler(
+        add_subreddit_subscriber,
+        "add2rsub",
+        require_args=True,
+    )
+    bot.add_handler(
+        edit_subreddit_subscription,
+        "edit_rsub",
+        require_args=True,
+    )
+    bot.add_handler(
+        remove_subreddit_subscriber,
+        "rm_rsub",
+        require_args=True,
+    )
+    bot.add_handler(
+        subscribe_subreddit,
+        "rsubscribe",
+        require_args=True,
+    )
+    bot.add_handler(
+        unsubscribe_subreddit,
+        "runsubscribe",
         require_args=True,
     )

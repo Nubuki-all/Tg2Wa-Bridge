@@ -6,6 +6,7 @@ hachoir
 pymongo
 python-decouple
 python-ffmpeg
+praw
 sqlalchemy
 telethon
 tgcrypto
