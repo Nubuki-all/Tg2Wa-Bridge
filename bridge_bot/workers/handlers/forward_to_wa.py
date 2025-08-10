@@ -1,5 +1,6 @@
 import asyncio
 
+from neonize.utils.ffmpeg import AFFmpeg
 from telethon import events
 
 from bridge_bot import bot, heavy_proc_lock, jid
@@ -283,6 +284,9 @@ async def forward_audios(event):
         ):
             return
         audio = await download_file(event.client, event.document, bytes, event)
+        async with AFFmpeg(audio) as ffmpeg:
+            if not await is_mp3_audio(ffmpeg.filepath):
+                audio = await ffmpeg.to_mp3()
         func_list = [
             forward_audio(event, chat_id, audio)
             for chat_id in subscribed_info.get("chats")

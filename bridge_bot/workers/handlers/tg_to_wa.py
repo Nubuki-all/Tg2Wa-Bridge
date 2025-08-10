@@ -248,28 +248,6 @@ async def vid_to_wa(event):
         await logger(Exception)
 
 
-async def send_audio(audio, wa_jid=None, ptt=False, event=None):
-    async with AFFmpeg(audio) as ffmpeg:
-        if not await is_mp3_audio(ffmpeg.filepath):
-            audio = await ffmpeg.to_mp3()
-    if event:
-        return await event.reply(audio, ptt)
-    resp = await bot.client.send_audio(wa_jid, audio, ptt)
-    user_jid = bot.client.me.JID
-    return (
-        construct_msg_and_evt(
-            wa_jid.User,
-            user_jid.User,
-            resp.ID,
-            None,
-            "g.us",
-            user_jid.Server,
-            resp.Message,
-        ),
-        resp,
-    )
-
-
 async def audio_to_wa(event):
     """Forwards audio messages to WA"""
     try:
@@ -279,6 +257,9 @@ async def audio_to_wa(event):
         ):
             return
         audio = await download_file(event.client, event.document, bytes, event)
+        async with AFFmpeg(audio) as ffmpeg:
+            if not await is_mp3_audio(ffmpeg.filepath):
+                audio = await ffmpeg.to_mp3()
         msg = wa_msg = None
         text = conv_tgmd_to_wamd(event.raw_text, event.entities)
         wa_chat_id = bridge_info.get("wa_chat")
