@@ -532,7 +532,7 @@ async def subscribe_subreddit(event, args, client):
         if not info[0] == y:
             return await event.reply("*Operation Cancelled!*")
         last_id = ""
-        async for submission in sub.new(limit=1)
+        async for submission in sub.new(limit=1):
             last_id = submission.id
         subscribed.update({args: {"chats": [], "name": sub_name, "last_id": last_id}})
         await save2db2(bot.group_dict, "groups")
