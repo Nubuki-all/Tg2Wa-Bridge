@@ -11,7 +11,7 @@ from .msg_utils import cleanhtml
 def process_submission(submission):
     caption = ""
     image = None
-    if (preview := submission.preview) and (prev_img := preview.get("images")):
+    if hasattr(submission, "preview") and (preview := submission.preview) and (prev_img := preview.get("images")):
         image = prev_img[0].get("source", {}).get("url")
     if submission.over_18:
         caption += "*🔞 NSFW*\n"
@@ -53,16 +53,26 @@ async def forward_submissions(submissions, chats):
         await logger(Exception)
 
 
-async def fetch_latest_for_subreddit(sub_name, sub_info):
+async def fetch_latest_for_subreddit(sub_name, sub_info, key="last_id"):
     submissions = []
     try:
         subreddit = await bot.reddit.subreddit(sub_name, fetch=True)
-        async for submission in subreddit.new(limit=30):
-            if submission.id != sub_info["last_id"]:
+        async for submission in subreddit.new(limit=20):
+            if submission.id != sub_info[key]:
                 submissions.append(submission)
                 continue
             break
+        if len(submissions) == 20 and sub_info.get("prev_id") and key == "last_id":
+            await logger(e=f"Last post for {sub_name} has been deleted!", warning=True)
+            submissions = await fetch_latest_for_subreddit(sub_name, sub_info, "prev_id")
+        elif key == "prev_id":
+            return submissions
+        if len(submissions) == 20:
+            sub_info["last_id"] = submissions[0].id
+            sub_info["prev_id"] = submissions[1].id if len(submissions) > 1 else submissions[0].id
+            submissions = []
         if submissions:
+            sub_info["prev_id"] = submissions[1].id if len(submissions) > 1 else sub_info["last_id"]
             sub_info["last_id"] = submissions[0].id
     except Exception:
         await logger(Exception)

@@ -386,7 +386,11 @@ def get_list_of_added_chats(s_info: dict) -> str:
 
 
 async def edit_subscription(event, args, client):
-    """Edit a subscription;"""
+    """
+    Edit a telegram subscription
+    Arguments:
+        CHAT_ID: Telegram chat_id (Previously subscribed telegram chat)
+    """
     try:
         user_id = event.from_user.id
         if not user_is_owner(user_id):
@@ -664,7 +668,11 @@ async def remove_subreddit_subscriber(event, args, client):
 
 
 async def edit_subreddit_subscription(event, args, client):
-    """Edit a subreddit subscription;"""
+    """
+    Edit a subreddit subscription:
+    Arguments:
+        Subreddit Name (Must have been previously subscribed to)
+    """
     try:
         user_id = event.from_user.id
         if not user_is_owner(user_id):
