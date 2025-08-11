@@ -42,7 +42,7 @@ async def forward_submission(data, chat):
             jid.build_jid(chat, "g.us"), image, caption, viewonce=nsfw
         )
     else:
-        await bot.send_message(jid.build_jid(chat, "g.us"), caption)
+        await bot.client.send_message(jid.build_jid(chat, "g.us"), caption)
 
 
 async def forward_submissions(submissions, chats):
