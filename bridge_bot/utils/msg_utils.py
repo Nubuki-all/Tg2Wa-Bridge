@@ -11,7 +11,10 @@ from telethon.types import User
 
 from bridge_bot import JID, Message, jid
 from bridge_bot.config import bot, conf
+from bridge_bot.fun.stuff import force_read_more
 from bridge_bot.others.exceptions import ArgumentParserError
+
+from .bot_utils import entities_has_spoiler
 
 # isort: off
 from .events import (
@@ -461,6 +464,10 @@ def get_bridge_header_wa(event):
     if forwarder:
         text += f"\n\nForwarded from\n⏩ *{forwarder}*"
     text += "\n\n"
+    
+    if entities_has_spoiler(event.entities):
+        text += f"⚠️ *Spoiler Warning* {force_read_more}\n\n"
+    
 
     return text
 
@@ -484,6 +491,8 @@ def get_subscription_header(event):
     if forwarder:
         text += f"\n\nForwarded from\n⏩ *{forwarder}*"
     text += "\n\n"
+    if entities_has_spoiler(event.entities):
+        text += f"⚠️ *Spoiler Warning* {force_read_more}\n\n"
     return text
 
 

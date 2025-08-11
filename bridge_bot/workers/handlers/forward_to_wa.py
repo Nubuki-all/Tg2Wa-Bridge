@@ -89,8 +89,11 @@ async def forward_images(event):
         ):
             return
         image = await event.download_media(file=bytes)
+        spoiler = False
+        if hasattr(event.media, "spoiler"):
+            spoiler = event.media.spoiler
         func_list = [
-            forward_image(event, chat_id, image)
+            forward_image(event, chat_id, image, spoiler)
             for chat_id in subscribed_info.get("chats")
         ]
         await asyncio.gather(*func_list)
@@ -98,7 +101,7 @@ async def forward_images(event):
         await logger(Exception)
 
 
-async def forward_image(event, wa_chat_id, image):
+async def forward_image(event, wa_chat_id, image, spoiler):
     try:
         msg = wa_msg = None
         chat_id = event.chat_id
@@ -113,7 +116,7 @@ async def forward_image(event, wa_chat_id, image):
             wa_msg = construct_message(
                 wa_chat_id, user_jid.User, msg.wa_id, None, "g.us", user_jid.Server, Msg
             )
-        rep = await bot.client.send_image(wa_jid, image, text, quoted=wa_msg)
+        rep = await bot.client.send_image(wa_jid, image, text, quoted=wa_msg, spoiler=spoiler,)
         return await save_message(
             wa_chat_id,
             chat_id,
@@ -140,8 +143,11 @@ async def forward_gifs(event):
         _id = f"{event.chat.id}:{event.id}"
         in_ = f"temp/{_id}.gif"
         out_ = await event.download_media(file=in_)
+        spoiler = False
+        if hasattr(event.media, "spoiler"):
+            spoiler = event.media.spoiler
         func_list = [
-            forward_gif(event, chat_id, out_)
+            forward_gif(event, chat_id, out_, spoiler)
             for chat_id in subscribed_info.get("chats")
         ]
         await asyncio.gather(*func_list)
@@ -150,7 +156,7 @@ async def forward_gifs(event):
         await logger(Exception)
 
 
-async def forward_gif(event, wa_chat_id, gif):
+async def forward_gif(event, wa_chat_id, gif, spoiler):
     try:
         msg = wa_msg = None
         chat_id = event.chat_id
@@ -177,6 +183,7 @@ async def forward_gif(event, wa_chat_id, gif):
                 quoted=wa_msg,
                 gifplayback=True,
                 is_gif=True,
+                spoiler=spoiler,
             )
             if not up_as_doc
             else await bot.client.send_document(
@@ -217,8 +224,11 @@ async def forward_vids(event):
             s_remove(in_)
         else:
             out_ = in_
+        spoiler = False
+        if hasattr(event.media, "spoiler"):
+            spoiler = event.media.spoiler
         func_list = [
-            forward_vid(event, chat_id, out_)
+            forward_vid(event, chat_id, out_, spoiler)
             for chat_id in subscribed_info.get("chats")
         ]
         await asyncio.gather(*func_list)
@@ -227,7 +237,7 @@ async def forward_vids(event):
         await logger(Exception)
 
 
-async def forward_vid(event, wa_chat_id, vid):
+async def forward_vid(event, wa_chat_id, vid, spoiler):
     try:
         msg = wa_msg = None
         chat_id = event.chat_id
@@ -253,6 +263,7 @@ async def forward_vid(event, wa_chat_id, vid):
                 vid,
                 text,
                 quoted=wa_msg,
+                spoiler=spoiler,
             )
             if not up_as_doc
             else await bot.client.send_document(

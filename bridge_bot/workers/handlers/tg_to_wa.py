@@ -87,6 +87,9 @@ async def img_to_wa(event):
         ):
             return
         msg = wa_msg = None
+        spoiler = False
+        if hasattr(event.media, "spoiler"):
+            spoiler = event.media.spoiler
         image = await event.download_media(file=bytes)
         text = conv_tgmd_to_wamd(event.raw_text, event.entities)
         wa_chat_id = bridge_info.get("wa_chat")
@@ -101,7 +104,7 @@ async def img_to_wa(event):
                 wa_chat_id, user_jid.User, msg.wa_id, None, "g.us", user_jid.Server, Msg
             )
         rep = await bot.client.send_image(
-            wa_jid, image, text, quoted=wa_msg, mentions_are_lids=True
+            wa_jid, image, text, quoted=wa_msg, spoiler=spoiler, mentions_are_lids=True
         )
         return await save_message(
             wa_chat_id,
@@ -135,6 +138,9 @@ async def gif_to_wa(event):
         ):
             return
         msg = wa_msg = None
+        spoiler = False
+        if hasattr(event.media, "spoiler"):
+            spoiler = event.media.spoiler
         text = conv_tgmd_to_wamd(event.raw_text, event.entities)
         wa_chat_id = bridge_info.get("wa_chat")
         wa_jid = jid.build_jid(wa_chat_id, "g.us")
@@ -162,6 +168,7 @@ async def gif_to_wa(event):
                 quoted=wa_msg,
                 gifplayback=True,
                 is_gif=True,
+                spoiler=spoiler,
                 mentions_are_lids=True,
             )
             if not up_as_doc
@@ -192,6 +199,9 @@ async def vid_to_wa(event):
         ):
             return
         msg = wa_msg = None
+        spoiler = False
+        if hasattr(event.media, "spoiler"):
+            spoiler = event.media.spoiler
         text = conv_tgmd_to_wamd(event.raw_text, event.entities)
         wa_chat_id = bridge_info.get("wa_chat")
         wa_jid = jid.build_jid(wa_chat_id, "g.us")
@@ -227,6 +237,7 @@ async def vid_to_wa(event):
                 out_,
                 text,
                 quoted=wa_msg,
+                spoiler=spoiler,
                 mentions_are_lids=True,
             )
             if not up_as_doc
