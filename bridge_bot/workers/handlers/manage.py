@@ -3,7 +3,7 @@ import itertools
 import time
 import uuid
 
-from prawcore.exceptions import Redirect
+from asyncprawcore.exceptions import Redirect
 
 from bridge_bot import bot, conf
 from bridge_bot.utils.bot_utils import (
@@ -505,7 +505,7 @@ async def subscribe_subreddit(event, args, client):
             return await event.reply(
                 f"Specified subreddit has already been subscribed to, edit the subscription instead"
             )
-        sub = bot.reddit.subreddit(args)
+        sub = await bot.reddit.subreddit(args)
         try:
             sub.name
         except Redirect:
@@ -532,9 +532,8 @@ async def subscribe_subreddit(event, args, client):
         if not info[0] == y:
             return await event.reply("*Operation Cancelled!*")
         last_id = ""
-        latest_submission = sub.new(limit=1)
-        if latest_submission:
-            last_id = latest_submission[0].id
+        async for submission in sub.new(limit=1)
+            last_id = submission.id
         subscribed.update({args: {"chats": [], "name": sub_name, "last_id": last_id}})
         await save2db2(bot.group_dict, "groups")
         await event.reply(f"*Subscribed to {sub_name} successfully!*")
@@ -680,6 +679,7 @@ async def edit_subreddit_subscription(event, args, client):
             ).get(args)
         ):
             return await event.reply(f"*Specified subscription does not exist!*")
+        sub = await bot.reddit.subreddit(args)
         try:
             sub.name
         except Redirect:

@@ -45,6 +45,7 @@ async def forward_submission(data, chat):
 async def forward_submissions(submissions, chats):
     try:
         for submission in submissions:
+            await submission.load()
             procd = process_submission(submission)
             funcs = [forward_submission(procd, chat) for chat in chats]
             await asyncio.gather(*funcs)
@@ -53,10 +54,10 @@ async def forward_submissions(submissions, chats):
         await logger(Exception)
 
 
-def fetch_latest_for_subreddit(sub_name, sub_info):
+async def fetch_latest_for_subreddit(sub_name, sub_info):
     submissions = []
     try:
-        for submission in bot.reddit.subreddit(sub_name).new(limit=30):
+        async for submission in bot.reddit.subreddit(sub_name).new(limit=30):
             if submission.id != sub_info["last_id"]:
                 submissions.append(submission)
                 continue
@@ -64,7 +65,7 @@ def fetch_latest_for_subreddit(sub_name, sub_info):
         else:
             sub_info["last_id"] = submissions[0].id
     except Exception:
-        log(Exception)
+        await logger(Exception)
     return submissions
 
 
@@ -76,8 +77,7 @@ async def auto_fetch_reddit_posts():
             continue
         updated = False
         for sub in subscribed.keys():
-            submissions = await sync_to_async(
-                fetch_latest_for_subreddit,
+            submissions = await fetch_latest_for_subreddit(
                 sub,
                 subscribed[sub],
             )

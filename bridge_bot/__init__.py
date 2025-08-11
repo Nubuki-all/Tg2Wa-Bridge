@@ -12,7 +12,7 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from urllib.parse import urlparse
 
-import praw
+import asyncpraw
 from colorlog import ColoredFormatter
 from neonize.aioze.client import NewAClient
 from neonize.events import (
@@ -121,7 +121,7 @@ try:
         else:
             init_reddit = True
     if init_reddit:
-        bot.reddit = praw.Reddit(
+        bot.reddit = asyncpraw.Reddit(
             client_id=conf.R_CLI_ID,
             client_secret=conf.R_CLI_SECRET,
             user_agent=f"python:Tg2wa:{bot.version} (by u/{conf.R_USER_NAME})",

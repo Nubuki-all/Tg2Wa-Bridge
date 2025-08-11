@@ -1,12 +1,12 @@
 aiohttp
 aiosqlite
+asyncpraw
 colorlog
 cryptg
 hachoir
 pymongo
 python-decouple
 python-ffmpeg
-praw
 sqlalchemy
 telethon
 tgcrypto
