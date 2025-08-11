@@ -87,11 +87,15 @@ async def fetch_latest_for_subreddit(sub_name, sub_info):
     except ResponseException as e:
         if str(e) == "received 401 HTTP response":
             bot.reddit = None
-            await logger(e="Reddit Client is unauthenticated, disabling…")
+            await logger(
+                e="Reddit Client is unauthenticated, disabling…",
+                error=True,
+            )
         else:
             await logger(ResponseException)
             await logger(
-                e="Unknown error, Suspending reddit post fetcher for 30 minutes"
+                e="Unknown error, Suspending reddit post fetcher for 30 minutes",
+                error=True,
             )
             await asyncio.sleep(1800)
     except Exception:
