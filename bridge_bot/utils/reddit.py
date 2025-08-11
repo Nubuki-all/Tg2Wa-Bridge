@@ -2,6 +2,7 @@ import asyncio
 
 from bridge_bot import jid
 from bridge_bot.config import bot, conf
+from bridge_bot.fun.stuff import force_read_more
 
 from .db_utils import save2db2
 from .log_utils import logger
@@ -20,7 +21,7 @@ def process_submission(submission):
     if submission.over_18:
         caption += "*🔞 NSFW*\n"
     if submission.spoiler:
-        caption += "⚠️ *Spoiler Warning*\n"
+        caption += f"⚠️ *Spoiler Warning* {force_read_more}\n"
     if caption:
         caption += "\n"
     if submission.link_flair_text:
