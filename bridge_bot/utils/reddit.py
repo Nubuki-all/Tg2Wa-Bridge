@@ -59,7 +59,7 @@ async def forward_submissions(submissions, chats):
 
 async def fetch_latest_for_subreddit(sub_name, sub_info):
     submissions = []
-    submission_ids []
+    submission_ids = []
     try:
         subreddit = await bot.reddit.subreddit(sub_name, fetch=True)
         last_ids = sub_info["last_ids"]
