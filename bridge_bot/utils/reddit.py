@@ -112,13 +112,18 @@ async def auto_fetch_reddit_posts():
             await asyncio.sleep(60)
             continue
         updated = False
+        rl = 0
         for sub in subscribed.keys():
+            if rl > 60:
+                rl = 0
+                await asyncio.sleep(60)
             if not (sub_info := subscribed[sub])["chats"]:
                 continue
             submissions = await fetch_latest_for_subreddit(
                 sub,
                 sub_info,
             )
+            rl += 1
             if not submissions:
                 if submissions == 0:
                     break
