@@ -33,14 +33,14 @@ def process_submission(submission):
     if submission.selftext_html:
         caption += f"\n{cleanhtml(submission.selftext_html).rstrip('\n')}"
     caption += f"\n\nhttps://www.reddit.com{submission.permalink}"
-    return image, caption, submission.over_18
+    return image, caption, submission.over_18, submission.spoiler
 
 
 async def forward_submission(data, chat):
-    image, caption, nsfw = data
+    image, caption, nsfw, spoiler = data
     if image:
         await bot.client.send_image(
-            jid.build_jid(chat, "g.us"), image, caption, viewonce=nsfw
+            jid.build_jid(chat, "g.us"), image, caption, viewonce=nsfw, spoiler=spoiler,
         )
     else:
         await bot.client.send_message(jid.build_jid(chat, "g.us"), caption)
