@@ -546,7 +546,9 @@ async def subscribe_subreddit(event, args, client):
         if not sub_img:
             sub_img = sub.icon_img
         if sub_img:
-            await event.reply_photo(sub_img, f"*Subscribed to {sub_name} successfully!*")
+            await event.reply_photo(
+                sub_img, f"*Subscribed to {sub_name} successfully!*"
+            )
         else:
             await event.reply(f"*Subscribed to {sub_name} successfully!*")
     except Exception as e:
