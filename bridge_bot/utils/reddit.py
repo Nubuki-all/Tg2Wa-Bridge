@@ -1,7 +1,7 @@
 import asyncio
 
 from bridge_bot import jid
-from bridge_bot.conf import bot, conf
+from bridge_bot.config import bot, conf
 
 from .bot_utils import sync_to_async
 from .db_utils import save2db2
