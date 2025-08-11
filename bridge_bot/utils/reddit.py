@@ -71,7 +71,7 @@ def fetch_latest_for_subreddit(sub_name, sub_info):
 async def auto_fetch_reddit_posts():
     while bot.reddit:
         subscribed = bot.group_dict.setdefault("subscribed_subreddits", {})
-        if not subscribed_subs:
+        if not subscribed:
             await asyncio.sleep(60)
             continue
         updated = False
