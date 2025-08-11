@@ -24,7 +24,7 @@ class Config:
             self.FS_THRESHOLD = config("FLOOD_SLEEP_THRESHOLD", default=600, cast=int)
             self.R_CLI_ID = config("REDDIT_CLIENT_ID", default="")
             self.R_CLI_SECRET = config("REDDIT_CLIENT_SECRET", default="")
-            self.REDDIT_SLEEP = config("REDDIT_SLEEP", default=60, cast=int)
+            self.REDDIT_SLEEP = config("REDDIT_SLEEP", default=240, cast=int)
             self.R_USER_NAME = config("REDDIT_USERNAME", default="")
             self.UB_REC_EVENTS = config("UB_REC_EVENTS", default=False, cast=bool)
             self.LOG_GROUP = config("LOG_GROUP", default="")

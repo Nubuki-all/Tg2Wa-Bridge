@@ -53,5 +53,6 @@ The sample also contains a brief explanation of what each environmental variable
 - Subscribe Whatsapp group(s) to a telegram channel.
 - Support for edits, deletion and reactions between bridged and subscribed chats.
 - Convert a telegram sticker set to Whatsapp sticker pack
-
-
+- Subscribe to a subreddit:
+    - Follow the instructions [here](https://github.com/reddit-archive/reddit/wiki/OAuth2-Quick-Start-Example)
+    - Then fill in your CLIENT_ID, SECRET & Reddit Username in the .env (Check the [.env.sample](.env.sample) for the appropriate field names)
