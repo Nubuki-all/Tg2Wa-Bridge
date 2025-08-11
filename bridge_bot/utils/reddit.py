@@ -90,7 +90,9 @@ async def fetch_latest_for_subreddit(sub_name, sub_info):
             await logger(e="Reddit Client is unauthenticated, disabling…")
         else:
             await logger(ResponseException)
-            await logger(e="Unknown error, Suspending reddit post fetcher for 30 minutes")
+            await logger(
+                e="Unknown error, Suspending reddit post fetcher for 30 minutes"
+            )
             await asyncio.sleep(1800)
     except Exception:
         await logger(Exception)
