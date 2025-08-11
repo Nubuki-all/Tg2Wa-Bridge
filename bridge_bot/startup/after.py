@@ -1,6 +1,17 @@
 import signal
 
-from bridge_bot import LOGS, Message, asyncio, asyncpraw, bot, conf, jid, sys, traceback, version_file
+from bridge_bot import (
+    LOGS,
+    Message,
+    asyncio,
+    asyncpraw,
+    bot,
+    conf,
+    jid,
+    sys,
+    traceback,
+    version_file,
+)
 from bridge_bot.fun.emojis import enmoji, enmoji2
 from bridge_bot.fun.quips import enquip, enquip2
 from bridge_bot.utils.log_utils import logger
