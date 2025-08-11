@@ -186,16 +186,21 @@ async def get_sticker_pack(event):
         functions.messages.GetStickerSetRequest(stickerset, hash=0)
     )
 
+
 def entities_has_spoiler(entities):
     for en in entities:
         if isinstance(en, MessageEntitySpoiler):
             return True
     return False
 
+
 def media_has_spoiler(media):
-    if not (isinstance(media, MessageMediaDocument) or isinstance(media, MessageMediaPhoto)):
+    if not (
+        isinstance(media, MessageMediaDocument) or isinstance(media, MessageMediaPhoto)
+    ):
         return False
     return media.spoiler
+
 
 def get_filename_from_doc(document):
     for attrib in document.attributes:

@@ -464,10 +464,9 @@ def get_bridge_header_wa(event):
     if forwarder:
         text += f"\n\nForwarded from\n⏩ *{forwarder}*"
     text += "\n\n"
-    
+
     if entities_has_spoiler(event.entities):
         text += f"⚠️ *Spoiler Warning* {force_read_more}\n\n"
-    
 
     return text
 

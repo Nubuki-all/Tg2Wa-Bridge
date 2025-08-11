@@ -116,7 +116,13 @@ async def forward_image(event, wa_chat_id, image, spoiler):
             wa_msg = construct_message(
                 wa_chat_id, user_jid.User, msg.wa_id, None, "g.us", user_jid.Server, Msg
             )
-        rep = await bot.client.send_image(wa_jid, image, text, quoted=wa_msg, spoiler=spoiler,)
+        rep = await bot.client.send_image(
+            wa_jid,
+            image,
+            text,
+            quoted=wa_msg,
+            spoiler=spoiler,
+        )
         return await save_message(
             wa_chat_id,
             chat_id,
