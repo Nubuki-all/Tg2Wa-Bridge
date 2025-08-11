@@ -1,5 +1,7 @@
 import asyncio
 
+from asyncprawcore.exceptions import ResponseException
+
 from bridge_bot import jid
 from bridge_bot.config import bot, conf
 from bridge_bot.fun.stuff import force_read_more
@@ -82,6 +84,14 @@ async def fetch_latest_for_subreddit(sub_name, sub_info):
                     e=f"Anti-spam pretention activated for {sub_name}!, Previous submissions would be dropped",
                     warning=True,
                 )
+    except ResponseException as e:
+        if e == "received 401 HTTP response":
+            bot.reddit = None
+            await logger("Reddit Client is unauthenticated, disabling…")
+        else:
+            await logger(ResponseException)
+            await logger("Unknown error, Suspending reddit for 30 minutes")
+            await asyncio.sleep(1800)
     except Exception:
         await logger(Exception)
     return submissions
