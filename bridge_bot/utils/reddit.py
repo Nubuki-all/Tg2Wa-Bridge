@@ -40,7 +40,11 @@ async def forward_submission(data, chat):
     image, caption, nsfw, spoiler = data
     if image:
         await bot.client.send_image(
-            jid.build_jid(chat, "g.us"), image, caption, viewonce=nsfw, spoiler=spoiler,
+            jid.build_jid(chat, "g.us"),
+            image,
+            caption,
+            viewonce=nsfw,
+            spoiler=spoiler,
         )
     else:
         await bot.client.send_message(jid.build_jid(chat, "g.us"), caption)
