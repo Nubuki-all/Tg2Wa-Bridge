@@ -1,6 +1,6 @@
 import signal
 
-from bridge_bot import LOGS, Message, asyncio, bot, conf, jid, sys, version_file
+from bridge_bot import LOGS, Message, asyncio, asyncpraw, bot, conf, jid, sys, traceback, version_file
 from bridge_bot.fun.emojis import enmoji, enmoji2
 from bridge_bot.fun.quips import enquip, enquip2
 from bridge_bot.utils.log_utils import logger
@@ -71,6 +71,26 @@ async def update_presence():
         await asyncio.sleep(300)
 
 
+async def initialize_reddit_client():
+    try:
+        init_reddit = False
+        if conf.R_CLI_ID or conf.R_CLI_SECRET or conf.R_USER_NAME:
+            if not (conf.R_CLI_ID and conf.R_CLI_SECRET and conf.R_USER_NAME):
+                LOGS.warning(
+                    "Missing a required env for Reddit, skipping initializing for the Reddit client."
+                )
+            else:
+                init_reddit = True
+        if init_reddit:
+            bot.reddit = asyncpraw.Reddit(
+                client_id=conf.R_CLI_ID,
+                client_secret=conf.R_CLI_SECRET,
+                user_agent=f"python:Tg2wa:{bot.version} (by u/{conf.R_USER_NAME})",
+            )
+    except Exception:
+        LOGS.error(traceback.format_exc())
+
+
 async def on_startup():
     try:
         await save_tg_client_id()
@@ -81,6 +101,7 @@ async def on_startup():
                 lambda: asyncio.create_task(on_termination()),
             )
         await initialize_all_sessions()
+        await initialize_reddit_client()
         while not bot.is_connected:
             await asyncio.sleep(0.5)
         # scheduler.start()

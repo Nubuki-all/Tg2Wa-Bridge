@@ -111,23 +111,6 @@ if sys.version_info < (3, 10):
     exit(1)
 
 LOGS.info("Starting...")
-init_reddit = False
-try:
-    if conf.R_CLI_ID or conf.R_CLI_SECRET or conf.R_USER_NAME:
-        if not (conf.R_CLI_ID and conf.R_CLI_SECRET and conf.R_USER_NAME):
-            LOGS.warning(
-                "Missing a required env for Reddit, skipping initializing for the Reddit client."
-            )
-        else:
-            init_reddit = True
-    if init_reddit:
-        bot.reddit = asyncpraw.Reddit(
-            client_id=conf.R_CLI_ID,
-            client_secret=conf.R_CLI_SECRET,
-            user_agent=f"python:Tg2wa:{bot.version} (by u/{conf.R_USER_NAME})",
-        )
-except Exception:
-    LOGS.error(traceback.format_exc())
 
 try:
     bot.tg_client = TelegramClient(
