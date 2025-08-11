@@ -188,9 +188,10 @@ async def get_sticker_pack(event):
 
 
 def entities_has_spoiler(entities):
-    for en in entities:
-        if isinstance(en, MessageEntitySpoiler):
-            return True
+    if entities:
+        for en in entities:
+            if isinstance(en, MessageEntitySpoiler):
+                return True
     return False
 
 
