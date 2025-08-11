@@ -543,7 +543,11 @@ async def subscribe_subreddit(event, args, client):
         }
         text = f"Subscribe to {'the above' if info_text else sub_name}?"
         if info_text:
-            rep = await event.reply_photo(sub_img, info_text) if sub_img else await event.reply(info_text)
+            rep = (
+                await event.reply_photo(sub_img, info_text)
+                if sub_img
+                else await event.reply(info_text)
+            )
         else:
             rep = event
         poll_msg = await create_sudo_button(
