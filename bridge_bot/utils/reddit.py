@@ -56,12 +56,13 @@ async def forward_submissions(submissions, chats):
 async def fetch_latest_for_subreddit(sub_name, sub_info):
     submissions = []
     try:
-        async for submission in bot.reddit.subreddit(sub_name).new(limit=30):
+        subreddit = await bot.reddit.subreddit(sub_name, fetch=True)
+        async for submission in subreddit.new(limit=30):
             if submission.id != sub_info["last_id"]:
                 submissions.append(submission)
                 continue
             break
-        else:
+        if submissions:
             sub_info["last_id"] = submissions[0].id
     except Exception:
         await logger(Exception)
@@ -76,13 +77,15 @@ async def auto_fetch_reddit_posts():
             continue
         updated = False
         for sub in subscribed.keys():
+            if not (sub_info := subscribed[sub])["chats"]:
+                continue
             submissions = await fetch_latest_for_subreddit(
                 sub,
-                subscribed[sub],
+                sub_info,
             )
             if not submissions:
                 continue
-            await forward_submissions(submissions, subscribed[chats])
+            await forward_submissions(submissions, sub_info["chats"])
             updated = True
         if updated:
             await save2db2(bot.group_dict, "groups")
