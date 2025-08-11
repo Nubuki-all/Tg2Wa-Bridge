@@ -20,6 +20,9 @@ def process_submission(submission):
         and (prev_img := preview.get("images"))
     ):
         image = prev_img[0].get("source", {}).get("url")
+    caption += f"*From:* _*{submission.subreddit_name_prefixed}*_"
+    caption += f"\n*By:* _u/{submission.author.name}_"
+    caption += "\n\n"
     if submission.over_18:
         caption += "*🔞 NSFW*\n"
     if submission.spoiler:
@@ -29,9 +32,7 @@ def process_submission(submission):
     if submission.link_flair_text:
         caption += f"> *[{submission.link_flair_text}]*"
         caption += "\n"
-    caption += f"*From:* _*{submission.subreddit_name_prefixed}*_"
-    caption += f"\n*By:* _u/{submission.author.name}_"
-    caption += f"\n\n*{submission.title}*"
+    caption += f"*{submission.title}*"
     if submission.selftext_html:
         caption += f"\n{cleanhtml(submission.selftext_html).rstrip('\n')}"
     caption += f"\n\nhttps://www.reddit.com{submission.permalink}"
