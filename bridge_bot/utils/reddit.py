@@ -11,7 +11,7 @@ from .msg_utils import cleanhtml
 def process_submission(submission):
     caption = ""
     image = None
-    if (preview := submission.preview) and (prev_img := preview.images):
+    if (preview := submission.preview) and (prev_img := preview.get("images")):
         image = prev_img[0].get("source", {}).get("url")
     if submission.over_18:
         caption += "*🔞 NSFW*\n"
@@ -70,8 +70,8 @@ async def fetch_latest_for_subreddit(sub_name, sub_info):
 
 
 async def auto_fetch_reddit_posts():
+    subscribed = bot.group_dict.setdefault("subscribed_subreddits", {})
     while bot.reddit:
-        subscribed = bot.group_dict.setdefault("subscribed_subreddits", {})
         if not subscribed:
             await asyncio.sleep(60)
             continue
