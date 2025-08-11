@@ -3,9 +3,8 @@ import asyncio
 from bridge_bot import jid
 from bridge_bot.config import bot, conf
 
-from .bot_utils import sync_to_async
 from .db_utils import save2db2
-from .log_utils import log, logger
+from .log_utils import logger
 from .msg_utils import cleanhtml
 
 
