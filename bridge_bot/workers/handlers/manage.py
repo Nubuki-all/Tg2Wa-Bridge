@@ -505,7 +505,7 @@ async def subscribe_subreddit(event, args, client):
             return await event.reply(
                 f"Specified subreddit has already been subscribed to, edit the subscription instead"
             )
-        sub = await bot.reddit.subreddit(args)
+        sub = await bot.reddit.subreddit(args, fetch=True)
         try:
             sub.name
         except Redirect:
@@ -679,7 +679,7 @@ async def edit_subreddit_subscription(event, args, client):
             ).get(args)
         ):
             return await event.reply(f"*Specified subscription does not exist!*")
-        sub = await bot.reddit.subreddit(args)
+        sub = await bot.reddit.subreddit(args, fetch=True)
         try:
             sub.name
         except Redirect:
