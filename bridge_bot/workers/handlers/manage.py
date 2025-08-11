@@ -2,7 +2,6 @@ import asyncio
 import itertools
 import time
 import uuid
-
 from collections import deque
 
 from asyncprawcore.exceptions import Redirect

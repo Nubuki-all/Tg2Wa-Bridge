@@ -73,7 +73,10 @@ async def fetch_latest_for_subreddit(sub_name, sub_info):
             last_ids.extend(reversed(submission_ids))
             if len(submissions) > 50:
                 submissions = []
-                await logger(e=f"Anti-spam pretention activated for {sub_name}!, Previous submissions would be dropped", warning=True)
+                await logger(
+                    e=f"Anti-spam pretention activated for {sub_name}!, Previous submissions would be dropped",
+                    warning=True,
+                )
     except Exception:
         await logger(Exception)
     return submissions
