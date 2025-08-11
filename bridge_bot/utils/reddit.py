@@ -57,33 +57,23 @@ async def forward_submissions(submissions, chats):
         await logger(Exception)
 
 
-async def fetch_latest_for_subreddit(sub_name, sub_info, key="last_id"):
+async def fetch_latest_for_subreddit(sub_name, sub_info):
     submissions = []
+    submission_ids []
     try:
         subreddit = await bot.reddit.subreddit(sub_name, fetch=True)
-        async for submission in subreddit.new(limit=20):
-            if submission.id != sub_info[key]:
+        last_ids = sub_info["last_ids"]
+        async for submission in subreddit.new(limit=50):
+            if (sub_id := submission.id) not in last_ids:
                 submissions.append(submission)
+                submission_ids.append(sub_id)
                 continue
             break
-        if len(submissions) == 20 and sub_info.get("prev_id") and key == "last_id":
-            await logger(e=f"Last post for {sub_name} has been deleted!", warning=True)
-            submissions = await fetch_latest_for_subreddit(
-                sub_name, sub_info, "prev_id"
-            )
-        elif key == "prev_id":
-            return submissions
-        if len(submissions) == 20:
-            sub_info["last_id"] = submissions[0].id
-            sub_info["prev_id"] = (
-                submissions[1].id if len(submissions) > 1 else submissions[0].id
-            )
-            submissions = []
         if submissions:
-            sub_info["prev_id"] = (
-                submissions[1].id if len(submissions) > 1 else sub_info["last_id"]
-            )
-            sub_info["last_id"] = submissions[0].id
+            last_ids.extend(reversed(submission_ids))
+            if len(submissions) > 50:
+                submissions = []
+                await logger(e=f"Anti-spam pretention activated for {sub_name}!, Previous submissions would be dropped", warning=True)
     except Exception:
         await logger(Exception)
     return submissions

@@ -3,6 +3,8 @@ import itertools
 import time
 import uuid
 
+from collections import deque
+
 from asyncprawcore.exceptions import Redirect
 
 from bridge_bot import bot, conf
@@ -534,10 +536,10 @@ async def subscribe_subreddit(event, args, client):
         info = button_dict.get(results[0])
         if not info[0] == y:
             return await event.reply("*Operation Cancelled!*")
-        last_id = ""
-        async for submission in sub.new(limit=1):
-            last_id = submission.id
-        subscribed.update({args: {"chats": [], "name": sub_name, "last_id": last_id}})
+        last_ids = deque(maxlen=50)
+        async for submission in sub.new(limit=5):
+            last_ids.append(submission.id)
+        subscribed.update({args: {"chats": [], "name": sub_name, "last_ids": last_ids}})
         await save2db2(bot.group_dict, "groups")
         await event.reply(f"*Subscribed to {sub_name} successfully!*")
     except Exception as e:
