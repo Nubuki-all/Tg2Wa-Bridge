@@ -540,7 +540,15 @@ async def subscribe_subreddit(event, args, client):
             last_ids.append(submission.id)
         subscribed.update({args: {"chats": [], "name": sub_name, "last_ids": last_ids}})
         await save2db2(bot.group_dict, "groups")
-        await event.reply(f"*Subscribed to {sub_name} successfully!*")
+        sub_img = ""
+        if hasattr(sub, "community_icon"):
+            sub_img = sub.community_icon
+        if not sub_img:
+            sub_img = sub.icon_img
+        if sub_img:
+            await event.reply_photo(sub_img, f"*Subscribed to {sub_name} successfully!*")
+        else:
+            await event.reply(f"*Subscribed to {sub_name} successfully!*")
     except Exception as e:
         await logger(Exception)
         await event.reply(f"*Error:* {e}")
