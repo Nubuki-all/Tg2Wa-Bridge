@@ -124,7 +124,7 @@ def get_date(value, start=False):
 def get_date_from_ts(timestamp):
     try:
         date = datetime.datetime.fromtimestamp(timestamp, tz)
-        return date.strftime("%d %b %Y %I:%M %p")
+        return date.strftime("%d %b %Y, %I:%M %p")
     except Exception:
         return 0
 
@@ -248,3 +248,14 @@ def prepare_zip_file_content(file_name_content: dict) -> bytes:
 
     zip_buffer.seek(0)
     return zip_buffer.getvalue()
+
+
+def human_format_num(num):
+    num = float("{:.3g}".format(num))
+    magnitude = 0
+    while abs(num) >= 1000:
+        magnitude += 1
+        num /= 1000.0
+    return "{}{}".format(
+        "{:f}".format(num).rstrip("0").rstrip("."), ["", "K", "M", "B", "T"][magnitude]
+    )

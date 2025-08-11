@@ -10,6 +10,8 @@ from bridge_bot import bot, conf
 from bridge_bot.utils.bot_utils import (
     DummyListener,
     compare_inner_dict_value,
+    get_date_from_ts,
+    human_format_num,
     remove_inactive_wasubs,
 )
 from bridge_bot.utils.db_utils import save2db2
@@ -515,18 +517,40 @@ async def subscribe_subreddit(event, args, client):
         except Redirect:
             return await event.reply("Specified subreddit does not exist!")
         sub_name = sub.display_name
+        sub_img = ""
+        if hasattr(sub, "community_icon"):
+            sub_img = sub.community_icon
+        if not sub_img:
+            sub_img = sub.icon_img
+        try:
+            info_text = (
+                f"*{sub.display_name_prefixed}*"
+                f"\n\n *Created on:* {get_date_from_ts(sub.created_utc)}"
+                f"\n*NSFW:* {sub.over18}"
+                f"\n*Subscribers:* {human_format_num(sub.subscribers)}"
+                "\n\n*Description:*\n"
+                f"> {sub.public_description}"
+                f"\n\n*Url:* https://www.reddit.com{sub.url}"
+            )
+        except Exception as e:
+            info_text = ""
+            await logger(e=e, warning=True)
         y = "Yes"
         n = "No"
         button_dict = {
             uuid.uuid4(): [y, y],
             uuid.uuid4(): [n, n],
         }
-        text = f"Subscribe to {sub_name}?"
+        text = f"Subscribe to {'the above' if info_text else sub_name}?"
+        if info_text:
+            rep = await event.reply_photo(sub_img, info_text) if sub_img else await event.reply(info_text)
+        else:
+            rep = event
         poll_msg = await create_sudo_button(
-            text, button_dict, event.chat.jid, user_id, 1, None, event.message
+            text, button_dict, rep.chat.jid, user_id, 1, None, rep.message
         )
         dl_poll_msg = bot.client.revoke_message(
-            event.chat.jid, bot.client.me.JID, poll_msg.ID
+            rep.chat.jid, bot.client.me.JID, poll_msg.ID
         )
         if not (results := await wait_for_button_response(poll_msg.ID)):
             await dl_poll_msg
@@ -540,17 +564,7 @@ async def subscribe_subreddit(event, args, client):
             last_ids.append(submission.id)
         subscribed.update({args: {"chats": [], "name": sub_name, "last_ids": last_ids}})
         await save2db2(bot.group_dict, "groups")
-        sub_img = ""
-        if hasattr(sub, "community_icon"):
-            sub_img = sub.community_icon
-        if not sub_img:
-            sub_img = sub.icon_img
-        if sub_img:
-            await event.reply_photo(
-                sub_img, f"*Subscribed to {sub_name} successfully!*"
-            )
-        else:
-            await event.reply(f"*Subscribed to {sub_name} successfully!*")
+        await event.reply(f"*Subscribed to {sub_name} successfully!*")
     except Exception as e:
         await logger(Exception)
         await event.reply(f"*Error:* {e}")
