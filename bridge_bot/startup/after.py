@@ -1,5 +1,7 @@
 import signal
 
+import aiohttp
+
 from bridge_bot import (
     LOGS,
     Message,
@@ -96,6 +98,7 @@ async def initialize_reddit_client():
             bot.reddit = asyncpraw.Reddit(
                 client_id=conf.R_CLI_ID,
                 client_secret=conf.R_CLI_SECRET,
+                requestor_kwargs={"session": bot.requests},
                 user_agent=f"python:Tg2wa:{bot.version} (by u/{conf.R_USER_NAME})",
             )
     except Exception:
@@ -106,6 +109,7 @@ async def on_startup():
     try:
         await save_tg_client_id()
         loop = asyncio.get_running_loop()
+        bot.requests = aiohttp.ClientSession(loop=loop)
         for signame in {"SIGINT", "SIGTERM", "SIGABRT"}:
             loop.add_signal_handler(
                 getattr(signal, signame),

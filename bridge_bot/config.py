@@ -47,6 +47,7 @@ class Runtime_Config:
         self.max_message_length = 4096
         self.repo_branch = None
         self.reddit = None
+        self.requests = None
         self.tg_client = None
         self.tg_client2 = None
         self.tg_client_ids = []
