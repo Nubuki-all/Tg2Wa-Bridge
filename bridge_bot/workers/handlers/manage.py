@@ -525,7 +525,7 @@ async def subscribe_subreddit(event, args, client):
         try:
             info_text = (
                 f"*{sub.display_name_prefixed}*"
-                f"\n\n*Created on:* {get_date_from_ts(sub.created_utc)} *(UTC+01:00)*"
+                f"\n\n*Created on:* {get_date_from_ts(sub.created_utc)} *(UTC+1)*"
                 f"\n*NSFW:* {sub.over18}"
                 f"\n*Subscribers:* {human_format_num(sub.subscribers)}"
                 "\n\n*Description:*\n"
