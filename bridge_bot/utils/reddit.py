@@ -26,8 +26,8 @@ def process_submission(submission):
     caption += f"\n*By:* _u/{submission.author.name}_"
     caption += f"\n\n*{submission.title}*"
     if submission.selftext_html:
-        caption += f"\n{cleanhtml(submission.selftext_html)}"
-    caption += f"\nhttps://www.reddit.com{submission.permalink}"
+        caption += f"\n{cleanhtml(submission.selftext_html).rstrip('\n')}"
+    caption += f"\n\nhttps://www.reddit.com{submission.permalink}"
     return image, caption, submission.over_18
 
 
