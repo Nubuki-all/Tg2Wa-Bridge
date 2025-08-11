@@ -98,6 +98,7 @@ async def fetch_latest_for_subreddit(sub_name, sub_info):
                 error=True,
             )
             await asyncio.sleep(1800)
+        return 0
     except Exception:
         await logger(Exception)
     return submissions
@@ -118,6 +119,8 @@ async def auto_fetch_reddit_posts():
                 sub_info,
             )
             if not submissions:
+                if submissions == 0:
+                    break
                 continue
             await forward_submissions(submissions, sub_info["chats"])
             updated = True
