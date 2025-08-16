@@ -61,8 +61,8 @@ async def upload_file(
     try:
         if isinstance(file, str):
             with open(file, "rb") as out:
-                return await _upload_file(client, out, progress_callback=progress_bar)
+                return await _upload_file(client, out, progress_callback=progress_callback)
         out = BytesIO(file)
-        return await _upload_file(client, out, progress_callback=progress_bar)
+        return await _upload_file(client, out, progress_callback=progress_callback)
     except Exception as e:
         await logger(e=f"Fast_Telethon returned: {e}", warning=True)
