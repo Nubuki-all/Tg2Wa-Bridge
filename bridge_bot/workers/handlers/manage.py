@@ -382,7 +382,7 @@ async def remove_subscriber(event, args, client):
 def get_list_of_added_chats(s_info: dict) -> str:
     msg = ""
     for i, x in zip(itertools.count(1), s_info.get("chats")):
-        msg += f"{i}. {x}"
+        msg += f"{i}. {x}\n"
     if msg:
         msg = "*List of added chats:*\n" + msg
     return msg

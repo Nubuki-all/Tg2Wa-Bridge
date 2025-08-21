@@ -182,12 +182,15 @@ async def doc_to_tg(event, tg_chat_id, client):
     try:
         chat_id = event.chat.id
         msg = None
-        document = await event.download()
+        document = document_ = await event.download()
         document = io.BytesIO(document)
         document.name = event.media.fileName
         text = await replace_mentions_for_tg(bot.tg_client, event.caption)
         text = await replace_wa_mentions(text, event)
         text = add_bridge_header_tg(whatsapp_md_to_telegram_md(text), event.from_user)
+        if (input_ := await upload_file(client, document_)):
+            input_.name = document.name
+            document = input_
         if event.reply_to_message:
             msg = await get_message(
                 chat_id, tg_chat_id, wa_id=event.reply_to_message.id
