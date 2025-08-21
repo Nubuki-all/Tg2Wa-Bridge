@@ -381,7 +381,10 @@ async def _internal_transfer_to_telegram(
     if is_large:
         return InputFileBig(file_id, part_count, file_name), file_size
     else:
-        return InputFile(file_id, part_count, file_name, hash_md5.hexdigest()), file_size
+        return (
+            InputFile(file_id, part_count, file_name, hash_md5.hexdigest()),
+            file_size,
+        )
 
 
 async def download_file(

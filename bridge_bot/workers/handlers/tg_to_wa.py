@@ -33,7 +33,7 @@ from bridge_bot.utils.msg_utils import (
     load_proto,
     replace_mentions_for_wa,
 )
-from bridge_bot.utils.os_utils import s_remove, size_of
+from bridge_bot.utils.os_utils import s_remove
 from bridge_bot.utils.tg_transfer import download_file
 
 # To Do: check if file size is properly within constraints

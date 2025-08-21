@@ -24,7 +24,7 @@ from bridge_bot.utils.msg_utils import (
     get_tg_edit_data,
     load_proto,
 )
-from bridge_bot.utils.os_utils import s_remove, size_of
+from bridge_bot.utils.os_utils import s_remove
 from bridge_bot.utils.tg_transfer import download_file
 
 
@@ -365,8 +365,8 @@ async def forward_docs(event):
             )
         ):
             return
-        #_id = f"{event.chat.id}:{event.id}"
-        #doc = f"temp/{_id}_{event.file.name}"
+        # _id = f"{event.chat.id}:{event.id}"
+        # doc = f"temp/{_id}_{event.file.name}"
         doc = await download_file(event.client, event.document, bytes, event)
         func_list = [
             forward_doc(event, chat_id, doc) for chat_id in subscribed_info.get("chats")
