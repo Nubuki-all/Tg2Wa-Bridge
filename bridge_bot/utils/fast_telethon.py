@@ -347,7 +347,8 @@ async def _internal_transfer_to_telegram(
     client: TelegramClient, response: BinaryIO, progress_callback: callable
 ) -> Tuple[TypeInputFile, int]:
     file_id = helpers.generate_random_long()
-    file_size = os.path.getsize(response.name)
+    #file_size = os.path.getsize(response.name)
+    file_size = len(response.getvalue())
 
     hash_md5 = hashlib.md5()
     uploader = ParallelTransferrer(client)
