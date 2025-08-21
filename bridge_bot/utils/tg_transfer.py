@@ -1,7 +1,7 @@
 import asyncio
 from io import BytesIO
 from random import randint
-from typing import Union, BinaryIO
+from typing import BinaryIO, Union
 
 from telethon import TelegramClient
 from telethon.tl.types import (
