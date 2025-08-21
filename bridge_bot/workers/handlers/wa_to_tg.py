@@ -188,7 +188,7 @@ async def doc_to_tg(event, tg_chat_id, client):
         text = await replace_mentions_for_tg(bot.tg_client, event.caption)
         text = await replace_wa_mentions(text, event)
         text = add_bridge_header_tg(whatsapp_md_to_telegram_md(text), event.from_user)
-        if (input_ := await upload_file(client, document_)):
+        if input_ := await upload_file(client, document_):
             input_.name = document.name
             document = input_
         if event.reply_to_message:
