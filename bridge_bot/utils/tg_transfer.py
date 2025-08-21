@@ -1,7 +1,7 @@
 import asyncio
 from io import BytesIO
 from random import randint
-from typing import Union
+from typing import Union, BinaryIO
 
 from telethon import TelegramClient
 from telethon.tl.types import (
@@ -55,7 +55,7 @@ async def download_file(
 
 async def upload_file(
     client: TelegramClient,
-    file: str | bytes,
+    file: str | BinaryIO,
     progress_callback: callable = None,
 ):
     try:
@@ -64,7 +64,7 @@ async def upload_file(
                 return await _upload_file(
                     client, out, progress_callback=progress_callback
                 )
-        out = BytesIO(file)
-        return await _upload_file(client, out, progress_callback=progress_callback)
+        # out = BytesIO(file)
+        return await _upload_file(client, file, progress_callback=progress_callback)
     except Exception as e:
         await logger(e=f"Fast_Telethon returned: {e}", warning=True)
