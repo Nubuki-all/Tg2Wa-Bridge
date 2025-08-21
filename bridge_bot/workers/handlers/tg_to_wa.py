@@ -9,7 +9,7 @@ from telethon.tl.types import (
 )
 
 from bridge_bot import bot, conf, heavy_proc_lock, jid
-from bridge_bot.utils.bot_utils import get_sticker_pack
+from bridge_bot.utils.bot_utils import get_sticker_pack, read_binary
 from bridge_bot.utils.log_utils import logger
 from bridge_bot.utils.media_utils import (
     all_vid_streams_avc,
@@ -144,12 +144,10 @@ async def gif_to_wa(event):
         text = conv_tgmd_to_wamd(event.raw_text, event.entities)
         wa_chat_id = bridge_info.get("wa_chat")
         wa_jid = jid.build_jid(wa_chat_id, "g.us")
-        _id = f"{event.chat.id}:{event.id}"
-        in_ = f"temp/{_id}.gif"
         up_as_doc = False
-        out_ = await event.download_media(file=in_)
+        gif = await event.download_media(file=bytes)
 
-        if size_of(out_) > 100000000:
+        if len(gif) > 100000000:
             up_as_doc = True
         text = get_bridge_header_wa(event) + replace_mentions_for_wa(text)
         if event.reply_to:
@@ -163,7 +161,7 @@ async def gif_to_wa(event):
         rep = (
             await bot.client.send_video(
                 wa_jid,
-                out_,
+                gif,
                 text,
                 quoted=wa_msg,
                 gifplayback=True,
@@ -173,7 +171,7 @@ async def gif_to_wa(event):
             )
             if not up_as_doc
             else await bot.client.send_document(
-                wa_jid, out_, text, quoted=wa_msg, filename=event.file.name
+                wa_jid, gif, text, quoted=wa_msg, filename=event.file.name
             )
         )
         await save_message(
@@ -185,7 +183,6 @@ async def gif_to_wa(event):
             rep.ID,
             timestamp=rep.Timestamp,
         )
-        return s_remove(in_, out_)
     except Exception:
         await logger(Exception)
 
@@ -216,11 +213,14 @@ async def vid_to_wa(event):
                     wa_jid, "Processing a video from tg"
                 )
                 await convert_to_avc(in_, out_)
+                s_remove(in_)
                 await bot.client.revoke_message(wa_jid, bot.client.me.JID, rep.ID)
 
         else:
             out_ = in_
-        if size_of(out_) > 100000000:
+        vid = await read_binary(out_)
+        s_remove(out_)
+        if len(vid) > 100000000:
             up_as_doc = True
         text = get_bridge_header_wa(event) + replace_mentions_for_wa(text)
         if event.reply_to:
@@ -234,7 +234,7 @@ async def vid_to_wa(event):
         rep = (
             await bot.client.send_video(
                 wa_jid,
-                out_,
+                vid,
                 text,
                 quoted=wa_msg,
                 spoiler=spoiler,
@@ -242,7 +242,7 @@ async def vid_to_wa(event):
             )
             if not up_as_doc
             else await bot.client.send_document(
-                wa_jid, out_, text, quoted=wa_msg, filename=event.file.name
+                wa_jid, vid, text, quoted=wa_msg, filename=event.file.name
             )
         )
         await save_message(
@@ -254,7 +254,6 @@ async def vid_to_wa(event):
             rep.ID,
             timestamp=rep.Timestamp,
         )
-        return s_remove(in_, out_)
     except Exception:
         await logger(Exception)
 
@@ -319,9 +318,7 @@ async def doc_to_wa(event):
             bridge_info := bot.group_dict.setdefault("tg_bridges", {}).get(chat_id)
         ):
             return
-        _id = f"{event.chat.id}:{event.id}"
-        doc = f"temp/{_id}_{event.file.name}"
-        await download_file(event.client, event.document, doc, event)
+        doc = await download_file(event.client, event.document, bytes, event)
         msg = wa_msg = None
         text = conv_tgmd_to_wamd(event.raw_text, event.entities)
         wa_chat_id = bridge_info.get("wa_chat")
@@ -338,7 +335,6 @@ async def doc_to_wa(event):
         rep = await bot.client.send_document(
             wa_jid, doc, text, event.file.name, quoted=wa_msg, mentions_are_lids=True
         )
-        s_remove(doc)
         return await save_message(
             wa_chat_id,
             chat_id,

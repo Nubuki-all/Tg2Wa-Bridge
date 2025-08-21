@@ -1,5 +1,6 @@
 import asyncio
 from io import BytesIO
+from pathlib import Path
 from random import randint
 from typing import BinaryIO, Union
 
@@ -61,10 +62,10 @@ async def upload_file(
     try:
         if isinstance(file, str):
             with open(file, "rb") as out:
-                return await _upload_file(
-                    client, out, progress_callback=progress_callback
-                )
-        # out = BytesIO(file)
+                file_ = BytesIO(out.read())
+                file_.name = Path(file).name
+                file = file_
+
         return await _upload_file(client, file, progress_callback=progress_callback)
     except Exception as e:
         await logger(e=f"Fast_Telethon returned: {e}", warning=True)

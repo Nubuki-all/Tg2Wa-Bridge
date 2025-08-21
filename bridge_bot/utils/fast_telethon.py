@@ -348,6 +348,9 @@ async def _internal_transfer_to_telegram(
     file_id = helpers.generate_random_long()
     # file_size = os.path.getsize(response.name)
     file_size = len(response.getvalue())
+    file_name = "upload"
+    if hasattr(response, "name"):
+        file_name = response.name
 
     hash_md5 = hashlib.md5()
     uploader = ParallelTransferrer(client)
@@ -376,9 +379,9 @@ async def _internal_transfer_to_telegram(
         await uploader.upload(bytes(buffer))
     await uploader.finish_upload()
     if is_large:
-        return InputFileBig(file_id, part_count, "upload"), file_size
+        return InputFileBig(file_id, part_count, file_name), file_size
     else:
-        return InputFile(file_id, part_count, "upload", hash_md5.hexdigest()), file_size
+        return InputFile(file_id, part_count, file_name, hash_md5.hexdigest()), file_size
 
 
 async def download_file(

@@ -4,7 +4,7 @@ from neonize.utils.ffmpeg import AFFmpeg
 from telethon import events
 
 from bridge_bot import bot, heavy_proc_lock, jid
-from bridge_bot.utils.bot_utils import get_sticker_pack
+from bridge_bot.utils.bot_utils import get_sticker_pack, read_binary
 from bridge_bot.utils.log_utils import logger
 from bridge_bot.utils.media_utils import (
     all_vid_streams_avc,
@@ -146,18 +146,15 @@ async def forward_gifs(event):
             )
         ):
             return
-        _id = f"{event.chat.id}:{event.id}"
-        in_ = f"temp/{_id}.gif"
-        out_ = await event.download_media(file=in_)
+        gif = await event.download_media(file=bytes)
         spoiler = False
         if hasattr(event.media, "spoiler"):
             spoiler = event.media.spoiler
         func_list = [
-            forward_gif(event, chat_id, out_, spoiler)
+            forward_gif(event, chat_id, gif, spoiler)
             for chat_id in subscribed_info.get("chats")
         ]
         await asyncio.gather(*func_list)
-        s_remove(out_)
     except Exception:
         await logger(Exception)
 
@@ -170,7 +167,7 @@ async def forward_gif(event, wa_chat_id, gif, spoiler):
         text = event.raw_text
         wa_jid = jid.build_jid(wa_chat_id, "g.us")
         up_as_doc = False
-        if size_of(gif) > 100000000:
+        if len(gif) > 100000000:
             up_as_doc = True
         text = get_subscription_header(event) + conv_tgmd_to_wamd(text, event.entities)
         if event.reply_to:
@@ -230,15 +227,16 @@ async def forward_vids(event):
             s_remove(in_)
         else:
             out_ = in_
+        vid = await read_binary(out_)
+        s_remove(out_)
         spoiler = False
         if hasattr(event.media, "spoiler"):
             spoiler = event.media.spoiler
         func_list = [
-            forward_vid(event, chat_id, out_, spoiler)
+            forward_vid(event, chat_id, vid, spoiler)
             for chat_id in subscribed_info.get("chats")
         ]
         await asyncio.gather(*func_list)
-        s_remove(out_)
     except Exception:
         await logger(Exception)
 
@@ -252,7 +250,7 @@ async def forward_vid(event, wa_chat_id, vid, spoiler):
         wa_jid = jid.build_jid(wa_chat_id, "g.us")
         up_as_doc = False
         # in_ = await event.download_media(file=in_)
-        if size_of(vid) > 100000000:
+        if len(vid) > 100000000:
             up_as_doc = True
         text = get_subscription_header(event) + conv_tgmd_to_wamd(text, event.entities)
         if event.reply_to:
@@ -367,14 +365,13 @@ async def forward_docs(event):
             )
         ):
             return
-        _id = f"{event.chat.id}:{event.id}"
-        doc = f"temp/{_id}_{event.file.name}"
-        await download_file(event.client, event.document, doc, event)
+        #_id = f"{event.chat.id}:{event.id}"
+        #doc = f"temp/{_id}_{event.file.name}"
+        doc = await download_file(event.client, event.document, bytes, event)
         func_list = [
             forward_doc(event, chat_id, doc) for chat_id in subscribed_info.get("chats")
         ]
         await asyncio.gather(*func_list)
-        s_remove(doc)
     except Exception:
         await logger(Exception)
 
