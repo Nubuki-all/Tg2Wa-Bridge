@@ -1,3 +1,4 @@
+import shutil
 from datetime import datetime as dt
 
 from neonize.utils.ffmpeg import AFFmpeg
@@ -206,20 +207,23 @@ async def vid_to_wa(event):
         in_ = f"temp/{_id}.mp4"
         out_ = f"temp/{_id}-1.mp4"
         up_as_doc = False
-        await download_file(event.client, event.video, in_, event)
-        if not await all_vid_streams_avc(in_):
-            async with heavy_proc_lock:
-                rep = await bot.client.send_message(
-                    wa_jid, "Processing a video from tg"
-                )
-                await convert_to_avc(in_, out_)
-                s_remove(in_)
-                await bot.client.revoke_message(wa_jid, bot.client.me.JID, rep.ID)
-
+        if shutil.disk_usage("/").free > event.file.size:
+            await download_file(event.client, event.video, in_, event)
+            if not await all_vid_streams_avc(in_):
+                async with heavy_proc_lock:
+                    rep = await bot.client.send_message(
+                        wa_jid, "Processing a video from tg"
+                    )
+                    await convert_to_avc(in_, out_)
+                    s_remove(in_)
+                    await bot.client.revoke_message(wa_jid, bot.client.me.JID, rep.ID)
+    
+            else:
+                out_ = in_
+            vid = await read_binary(out_)
+            s_remove(out_)
         else:
-            out_ = in_
-        vid = await read_binary(out_)
-        s_remove(out_)
+            vid = await download_file(event.client, event.video, bytes, event)
         if len(vid) > 100000000:
             up_as_doc = True
         text = get_bridge_header_wa(event) + replace_mentions_for_wa(text)

@@ -1,4 +1,5 @@
 import asyncio
+import shutil
 
 from neonize.utils.ffmpeg import AFFmpeg
 from telethon import events
@@ -217,18 +218,21 @@ async def forward_vids(event):
             )
         ):
             return
-        _id = f"{event.chat.id}:{event.id}"
-        in_ = f"temp/{_id}.mp4"
-        out_ = f"temp/{_id}-1.mp4"
-        await download_file(event.client, event.video, in_, event)
-        if not await all_vid_streams_avc(in_):
-            async with heavy_proc_lock:
-                await convert_to_avc(in_, out_)
-            s_remove(in_)
+        if shutil.disk_usage("/").free > event.file.size:
+            _id = f"{event.chat.id}:{event.id}"
+            in_ = f"temp/{_id}.mp4"
+            out_ = f"temp/{_id}-1.mp4"
+            await download_file(event.client, event.video, in_, event)
+            if not await all_vid_streams_avc(in_):
+                async with heavy_proc_lock:
+                    await convert_to_avc(in_, out_)
+                s_remove(in_)
+            else:
+                out_ = in_
+            vid = await read_binary(out_)
+            s_remove(out_)
         else:
-            out_ = in_
-        vid = await read_binary(out_)
-        s_remove(out_)
+            vid = await download_file(event.client, event.video, bytes, event)
         spoiler = False
         if hasattr(event.media, "spoiler"):
             spoiler = event.media.spoiler
