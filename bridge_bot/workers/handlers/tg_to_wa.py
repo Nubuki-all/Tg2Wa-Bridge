@@ -217,7 +217,7 @@ async def vid_to_wa(event):
                     await convert_to_avc(in_, out_)
                     s_remove(in_)
                     await bot.client.revoke_message(wa_jid, bot.client.me.JID, rep.ID)
-    
+
             else:
                 out_ = in_
             vid = await read_binary(out_)
