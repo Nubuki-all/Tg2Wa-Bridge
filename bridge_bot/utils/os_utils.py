@@ -33,7 +33,7 @@ async def enshell(cmd):
 
 def qclean():
     try:
-        os.system("rm -rf downloads/*")
+        os.system("rm -rf temp/*")
     except Exception:
         pass
 
