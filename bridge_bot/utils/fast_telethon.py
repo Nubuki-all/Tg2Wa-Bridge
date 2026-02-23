@@ -132,9 +132,9 @@ class UploadSender:
     async def _next(self, data: bytes) -> None:
         self.request.bytes = data
         log.debug(f"Sending file part {
-                self.request.file_part}/{
-                self.part_count}" f" with {
-                len(data)} bytes")
+            self.request.file_part}/{
+            self.part_count}" f" with {
+            len(data)} bytes")
         await self.client._call(self.sender, self.request)
         self.request.file_part += self.stride
 

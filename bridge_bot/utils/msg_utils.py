@@ -421,8 +421,8 @@ async def get_bridge_rheader_wa(event, client):
         is_user = False
     user = await client.get_entity(user_id)
     name = f"{
-            user.first_name} {
-            user.last_name if user.last_name else ''}" if is_user else user.title
+        user.first_name} {
+        user.last_name if user.last_name else ''}" if is_user else user.title
     username = f"@{user.username}, " if user.username else ""
     user_id = f"@:{user.id}" if is_user else ""
     text = (
@@ -451,8 +451,8 @@ def get_bridge_header_wa(event):
     ).strip(", ")
     if fi := event.forward:
         forwarder = (fi.chat.title if fi.chat else f"{
-                fi.sender.first_name} {
-                fi.sender.last_name if fi.sender.last_name else ''}").strip()
+            fi.sender.first_name} {
+            fi.sender.last_name if fi.sender.last_name else ''}").strip()
     if forwarder:
         text += f"\n\nForwarded from\n↪ *{forwarder}*"
     text += "\n\n"
@@ -473,8 +473,8 @@ def get_subscription_header(event):
     text = f"> *From:* {event.chat.title}\n> *CHAT ID:* {event.chat_id}"
     if fi := event.forward:
         forwarder = (fi.chat.title if fi.chat else f"{
-                fi.sender.first_name} {
-                fi.sender.last_name if fi.sender.last_name else ''}").strip()
+            fi.sender.first_name} {
+            fi.sender.last_name if fi.sender.last_name else ''}").strip()
     if forwarder:
         text += f"\n\nForwarded from\n↪ *{forwarder}*"
     text += "\n\n"
