@@ -454,7 +454,7 @@ def get_bridge_header_wa(event):
                 fi.sender.first_name} {
                 fi.sender.last_name if fi.sender.last_name else ''}").strip()
     if forwarder:
-        text += f"\n\nForwarded from\n⏩ *{forwarder}*"
+        text += f"\n\nForwarded from\n↪ *{forwarder}*"
     text += "\n\n"
 
     if entities_has_spoiler(event.entities):
@@ -476,7 +476,7 @@ def get_subscription_header(event):
                 fi.sender.first_name} {
                 fi.sender.last_name if fi.sender.last_name else ''}").strip()
     if forwarder:
-        text += f"\n\nForwarded from\n⏩ *{forwarder}*"
+        text += f"\n\nForwarded from\n↪ *{forwarder}*"
     text += "\n\n"
     if entities_has_spoiler(event.entities):
         text += f"⚠️ *Spoiler Warning* {force_read_more}\n\n"
