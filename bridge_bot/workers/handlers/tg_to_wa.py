@@ -448,6 +448,9 @@ async def delete_for_wa(event):
 async def edit_for_wa(event):
     "Edits bridged messages when exited on telegram."
     try:
+        if bot.tg_client2:
+            if event.edit_hide:
+                return
         chat_id = event.chat_id
         if not (
             bridge_info := bot.group_dict.setdefault("tg_bridges", {}).get(chat_id)

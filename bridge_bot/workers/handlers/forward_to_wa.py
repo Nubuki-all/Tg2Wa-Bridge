@@ -484,6 +484,9 @@ async def forward_sticker(event, wa_chat_id, sticker):
 async def handle_edits(event):
     """Handle messages changes and relay them to WA"""
     try:
+        if bot.tg_client2:
+            if event.edit_hide:
+                return
         chat_id = event.chat_id
         if not (
             subscribed_info := bot.group_dict.setdefault("subscribed_channels", {}).get(
