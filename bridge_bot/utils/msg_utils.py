@@ -449,7 +449,7 @@ def get_bridge_header_wa(event):
         f"> *From:* _*{name.strip()}*_{'' if is_user else ' _[Channel]_'}\n"
         f"> *Tag:* {username}{user_id}"
     ).strip(", ")
-    if fi := event.forward and (fi.chat or fi.sender):
+    if (fi := event.forward) and (fi.chat or fi.sender):
         forwarder = (fi.chat.title if fi.chat else f"{
             fi.sender.first_name} {
             fi.sender.last_name if fi.sender.last_name else ''}").strip()
@@ -471,7 +471,7 @@ def add_bridge_header_tg(text, sender):
 def get_subscription_header(event):
     forwarder = None
     text = f"> *From:* {event.chat.title}\n> *CHAT ID:* {event.chat_id}"
-    if fi := event.forward and (fi.chat or fi.sender):
+    if (fi := event.forward) and (fi.chat or fi.sender):
         forwarder = (fi.chat.title if fi.chat else f"{
             fi.sender.first_name} {
             fi.sender.last_name if fi.sender.last_name else ''}").strip()
