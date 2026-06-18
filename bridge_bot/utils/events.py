@@ -222,6 +222,14 @@ class Event(BaseEvent):
         msg = self.gen_new_msg(response)
         return construct_event(msg)
 
+    async def pin(self, seconds: int = 604800):
+        await self.client.pin_message(
+            self.chat.jid, self.client.me.JID, self.id, seconds
+        )
+
+    async def unpin(self):
+        await self.client.pin_message(self.chat.jid, self.client.me.JID, self.id, 1)
+
     async def _send_reaction(self, emoji: str) -> Event:
         """Internal method to send a reaction."""
         reaction = await self.client.build_reaction(
@@ -457,7 +465,7 @@ class Event(BaseEvent):
     ) -> Event:
         quoted = self._get_quoted() if quote else None
         mentions_are_not_jids = False if mentions_are_jids else self.lid_address
-        response = await self.client.send_image(
+        send_image = self.client.send_image(
             self.chat.jid,
             photo,
             caption,
@@ -468,6 +476,14 @@ class Event(BaseEvent):
             mentions_are_lids=mentions_are_lids or mentions_are_not_jids,
             add_msg_secret=add_msg_secret,
         )
+        try:
+            response = await send_image
+        except Exception as e:
+            if not "upload failed with status code 429" in str(e):
+                raise
+            _log_.warning("uploading image failed with error 429, sleeping for 10 seconds…")
+            await asyncio.sleep(10)
+            response = await send_image
         msg = self.gen_new_msg(response)
         return construct_event(msg)
 

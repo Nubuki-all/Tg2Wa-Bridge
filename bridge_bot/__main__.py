@@ -8,6 +8,7 @@ from . import (
     MessageEv,
     NewAClient,
     PairStatusEv,
+    asyncio,
     bot,
     conf,
     time,
@@ -89,11 +90,12 @@ async def start_bot():
         await bot.tg_client.start(bot_token=conf.BOT_TOKEN)
         if bot.tg_client2:
             await bot.tg_client2.start()
-        (
-            await bot.client.PairPhone(conf.PH_NUMBER, show_push_notification=True)
-            if conf.PH_NUMBER
-            else await bot.client.connect()
-        )
+        payload = b""
+        if conf.PH_NUMBER:
+            payload = bot.client.prepare_pair_phone_payload(
+                conf.PH_NUMBER, show_push_notification=True
+            )
+        await bot.client.connect(payload)
         await on_startup()
         # await bot.tg_client.catch_up()
         # if bot.tg_client2:
@@ -105,4 +107,4 @@ async def start_bot():
         exit()
 
 
-bot.client.loop.run_until_complete(start_bot())
+asyncio.run(start_bot())
