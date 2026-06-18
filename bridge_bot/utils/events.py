@@ -31,8 +31,8 @@ from bridge_bot.types.event import BaseEvent, Chat, User
 from .bot_utils import write_binary
 from .log_utils import logger
 
-
 _log_ = logging.getLogger(__name__)
+
 
 class Event(BaseEvent):
     def __init__(self):
