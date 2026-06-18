@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import copy
 import inspect
+import logging
 import os
 import warnings
 from collections import deque
@@ -30,6 +31,8 @@ from bridge_bot.types.event import BaseEvent, Chat, User
 from .bot_utils import write_binary
 from .log_utils import logger
 
+
+_log_ = logging.getLogger(__name__)
 
 class Event(BaseEvent):
     def __init__(self):
@@ -777,14 +780,12 @@ async def download_media(message: Message) -> bytes:
     enc_file_hash = item.fileEncSHA256
     file_hash = item.fileSHA256
     media_key = item.mediaKey
-    file_length = item.fileLength
     mms_type = media_type.to_mms()
     return await bot.client.download_media_with_path(
         direct_path,
         enc_file_hash,
         file_hash,
         media_key,
-        file_length,
         media_type,
         mms_type,
     )
