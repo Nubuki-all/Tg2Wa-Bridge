@@ -11,6 +11,7 @@ from bridge_bot.utils.media_utils import (
     all_vid_streams_avc,
     convert_to_avc,
     convert_to_wa_sticker,
+    is_mp3_audio,
 )
 from bridge_bot.utils.msg_store import (
     delete_message,
