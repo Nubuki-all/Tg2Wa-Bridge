@@ -93,7 +93,8 @@ async def forward_rich_messages(event):
             return
 
         func_list = [
-            forward_rich_message(event, chat_id) for chat_id in subscribed_info.get("chats")
+            forward_rich_message(event, chat_id)
+            for chat_id in subscribed_info.get("chats")
         ]
         await asyncio.gather(*func_list)
     except Exception:
@@ -566,7 +567,9 @@ async def relay_edit(event, wa_chat_id):
         if event.rich_message:
             text = rich_message_to_whatsapp(event.rich_message)
         else:
-            text = get_subscription_header(event) + conv_tgmd_to_wamd(text, event.entities)
+            text = get_subscription_header(event) + conv_tgmd_to_wamd(
+                text, event.entities
+            )
         update_data, edit_msg = get_tg_edit_data(text, msg.raw)
         if not update_data:
             await logger(

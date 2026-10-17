@@ -9,9 +9,7 @@ def rich_text_to_whatsapp(obj) -> str:
         return obj.text
 
     if isinstance(obj, types.TextConcat):
-        return "".join(
-            rich_text_to_whatsapp(part) for part in obj.texts
-        )
+        return "".join(rich_text_to_whatsapp(part) for part in obj.texts)
 
     if isinstance(obj, types.TextBold):
         return f"*{rich_text_to_whatsapp(obj.text)}*"
@@ -44,9 +42,7 @@ def rich_text_to_whatsapp(obj) -> str:
         return rich_text_to_whatsapp(obj.text)
 
     if isinstance(obj, types.TextConcat):
-        return "".join(
-            rich_text_to_whatsapp(part) for part in obj.texts
-        )
+        return "".join(rich_text_to_whatsapp(part) for part in obj.texts)
 
     # Links and other wrappers.
     if hasattr(obj, "text"):
@@ -74,10 +70,7 @@ def list_item_to_whatsapp(item) -> str:
     if isinstance(item, types.PageListItemBlocks):
         content = "\n".join(
             text
-            for text in (
-                page_block_to_whatsapp(block)
-                for block in item.blocks
-            )
+            for text in (page_block_to_whatsapp(block) for block in item.blocks)
             if text
         )
         return content
@@ -87,64 +80,74 @@ def list_item_to_whatsapp(item) -> str:
 
 def page_block_to_whatsapp(block) -> str:
     # Headings become bold.
-    if isinstance(block, (
-        types.PageBlockTitle,
-        types.PageBlockHeading1,
-        types.PageBlockHeading2,
-        types.PageBlockHeading3,
-        types.PageBlockHeading4,
-        types.PageBlockHeading5,
-        types.PageBlockHeading6,
-    )):
+    if isinstance(
+        block,
+        (
+            types.PageBlockTitle,
+            types.PageBlockHeading1,
+            types.PageBlockHeading2,
+            types.PageBlockHeading3,
+            types.PageBlockHeading4,
+            types.PageBlockHeading5,
+            types.PageBlockHeading6,
+        ),
+    ):
         text = rich_text_to_whatsapp(block.text)
         return f"*{text}*" if text else ""
 
     # Ordinary text blocks.
-    if isinstance(block, (
-        types.PageBlockParagraph,
-        types.PageBlockSubtitle,
-        types.PageBlockHeader,
-        types.PageBlockSubheader,
-        types.PageBlockKicker,
-        types.PageBlockFooter,
-        types.PageBlockPreformatted,
-        types.PageBlockThinking,
-    )):
+    if isinstance(
+        block,
+        (
+            types.PageBlockParagraph,
+            types.PageBlockSubtitle,
+            types.PageBlockHeader,
+            types.PageBlockSubheader,
+            types.PageBlockKicker,
+            types.PageBlockFooter,
+            types.PageBlockPreformatted,
+            types.PageBlockThinking,
+        ),
+    ):
         return rich_text_to_whatsapp(block.text)
 
     # Quotes.
-    if isinstance(block, (
-        types.PageBlockBlockquote,
-        types.PageBlockPullquote,
-    )):
+    if isinstance(
+        block,
+        (
+            types.PageBlockBlockquote,
+            types.PageBlockPullquote,
+        ),
+    ):
         text = rich_text_to_whatsapp(block.text)
-        return "\n".join(
-            f"> {line}" for line in text.splitlines()
-        )
+        return "\n".join(f"> {line}" for line in text.splitlines())
 
     # Lists.
-    if isinstance(block, (
-        types.PageBlockList,
-        types.PageBlockOrderedList,
-    )):
+    if isinstance(
+        block,
+        (
+            types.PageBlockList,
+            types.PageBlockOrderedList,
+        ),
+    ):
         return "\n".join(
             text
-            for text in (
-                list_item_to_whatsapp(item)
-                for item in block.items
-            )
+            for text in (list_item_to_whatsapp(item) for item in block.items)
             if text
         )
 
     # Nested blocks.
-    if isinstance(block, (
-        types.PageBlockBlockquoteBlocks,
-        types.PageBlockCollage,
-        types.PageBlockCover,
-        types.PageBlockDetails,
-        types.PageBlockEmbedPost,
-        types.PageBlockSlideshow,
-    )):
+    if isinstance(
+        block,
+        (
+            types.PageBlockBlockquoteBlocks,
+            types.PageBlockCollage,
+            types.PageBlockCover,
+            types.PageBlockDetails,
+            types.PageBlockEmbedPost,
+            types.PageBlockSlideshow,
+        ),
+    ):
         parts = []
 
         cover = getattr(block, "cover", None)
@@ -182,10 +185,7 @@ def page_block_to_whatsapp(block) -> str:
             parts.append(f"*{title}*")
 
         for row in block.rows:
-            cells = [
-                rich_text_to_whatsapp(cell.text)
-                for cell in row.cells
-            ]
+            cells = [rich_text_to_whatsapp(cell.text) for cell in row.cells]
             parts.append(" | ".join(cells))
 
         return "\n".join(parts)
@@ -195,14 +195,17 @@ def page_block_to_whatsapp(block) -> str:
         return block.source
 
     # Media captions.
-    if isinstance(block, (
-        types.PageBlockAudio,
-        types.PageBlockDocument,
-        types.PageBlockMap,
-        types.PageBlockPhoto,
-        types.PageBlockVideo,
-        types.PageBlockEmbed,
-    )):
+    if isinstance(
+        block,
+        (
+            types.PageBlockAudio,
+            types.PageBlockDocument,
+            types.PageBlockMap,
+            types.PageBlockPhoto,
+            types.PageBlockVideo,
+            types.PageBlockEmbed,
+        ),
+    ):
         return caption_to_whatsapp(block.caption)
 
     if isinstance(block, types.PageBlockRelatedArticles):
@@ -213,9 +216,7 @@ def page_block_to_whatsapp(block) -> str:
             parts.append(f"*{title}*")
 
         for article in block.articles:
-            title = rich_text_to_whatsapp(
-                getattr(article, "title", None)
-            )
+            title = rich_text_to_whatsapp(getattr(article, "title", None))
             if title:
                 parts.append(f"- {title}")
 
@@ -225,26 +226,24 @@ def page_block_to_whatsapp(block) -> str:
         return rich_text_to_whatsapp(block.author)
 
     # These blocks have no useful plain-text representation.
-    if isinstance(block, (
-        types.PageBlockAnchor,
-        types.PageBlockButtonRow,
-        types.PageBlockChannel,
-        types.PageBlockDivider,
-        types.PageBlockUnsupported,
-    )):
+    if isinstance(
+        block,
+        (
+            types.PageBlockAnchor,
+            types.PageBlockButtonRow,
+            types.PageBlockChannel,
+            types.PageBlockDivider,
+            types.PageBlockUnsupported,
+        ),
+    ):
         return ""
 
-    raise NotImplementedError(
-        f"Unhandled PageBlock: {type(block).__name__}"
-    )
+    raise NotImplementedError(f"Unhandled PageBlock: {type(block).__name__}")
 
 
 def rich_message_to_whatsapp(message) -> str:
     return "\n\n".join(
         text
-        for text in (
-            page_block_to_whatsapp(block)
-            for block in message.blocks
-        )
+        for text in (page_block_to_whatsapp(block) for block in message.blocks)
         if text
     )
