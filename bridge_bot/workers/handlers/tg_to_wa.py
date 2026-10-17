@@ -34,6 +34,7 @@ from bridge_bot.utils.msg_utils import (
     load_proto,
     replace_mentions_for_wa,
 )
+from bridge_bot.utils.parse_rich_message import rich_message_to_whatsapp
 from bridge_bot.utils.os_utils import s_remove
 from bridge_bot.utils.tg_transfer import download_file
 
@@ -50,6 +51,45 @@ async def text_to_wa(event):
             return
         msg = None
         text = conv_tgmd_to_wamd(event.raw_text, event.entities)
+        wa_chat_id = bridge_info.get("wa_chat")
+        wa_jid = jid.build_jid(wa_chat_id, "g.us")
+        text = get_bridge_header_wa(event) + replace_mentions_for_wa(text)
+        if event.reply_to:
+            msg = await get_message(wa_chat_id, chat_id, event.reply_to.reply_to_msg_id)
+        if msg:
+            Msg = load_proto(msg.raw)
+            user_jid = load_proto(msg.raw_user, True)
+            wa_msg = construct_message(
+                wa_chat_id, user_jid.User, msg.wa_id, None, "g.us", user_jid.Server, Msg
+            )
+            rep = await bot.client.reply_message(
+                text, wa_msg, to=wa_jid, mentions_are_lids=True
+            )
+        else:
+            rep = await bot.client.send_message(wa_jid, text, mentions_are_lids=True)
+        return await save_message(
+            wa_chat_id,
+            chat_id,
+            None,
+            rep.Message,
+            event.id,
+            rep.ID,
+            timestamp=rep.Timestamp,
+        )
+    except Exception:
+        await logger(Exception)
+
+
+async def rich_message_to_wa(event):
+    """Forwards rich messages to WA"""
+    try:
+        chat_id = event.chat_id
+        if not (
+            bridge_info := bot.group_dict.setdefault("tg_bridges", {}).get(chat_id)
+        ):
+            return
+        msg = None
+        text = rich_message_to_whatsapp(event.rich_message)
         wa_chat_id = bridge_info.get("wa_chat")
         wa_jid = jid.build_jid(wa_chat_id, "g.us")
         text = get_bridge_header_wa(event) + replace_mentions_for_wa(text)
@@ -461,7 +501,10 @@ async def edit_for_wa(event):
         msg = await get_message(wa_chat_id, chat_id, msg_id)
         if not msg:
             return
-        text = conv_tgmd_to_wamd(event.raw_text, event.entities)
+        if event.rich_message:
+            text = rich_message_to_whatsapp(event.rich_message)
+        else:
+            text = conv_tgmd_to_wamd(event.raw_text, event.entities)
         text = get_bridge_header_wa(event) + replace_mentions_for_wa(text)
         update_data, edit_msg = get_tg_edit_data(text, msg.raw)
         if not update_data:
@@ -605,6 +648,7 @@ def add_tg_bridge_handlers():
         (gif_to_wa, [lambda e: e.gif]),
         (img_to_wa, [lambda e: e.photo]),
         (sticker_to_wa, [lambda e: e.sticker]),
+        (rich_message_to_wa, [lambda e: e.rich_message]),
         (
             text_to_wa,
             [

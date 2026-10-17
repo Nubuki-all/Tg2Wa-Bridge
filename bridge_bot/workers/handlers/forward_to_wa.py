@@ -27,6 +27,7 @@ from bridge_bot.utils.msg_utils import (
     load_proto,
 )
 from bridge_bot.utils.os_utils import s_remove
+from bridge_bot.utils.parse_rich_message import rich_message_to_whatsapp
 from bridge_bot.utils.tg_transfer import download_file
 
 
@@ -56,6 +57,56 @@ async def forward_text(event, wa_chat_id):
         text = event.raw_text
         wa_jid = jid.build_jid(wa_chat_id, "g.us")
         text = get_subscription_header(event) + conv_tgmd_to_wamd(text, event.entities)
+        if event.reply_to:
+            msg = await get_message(wa_chat_id, chat_id, event.reply_to.reply_to_msg_id)
+        if msg:
+            Msg = load_proto(msg.raw)
+            user_jid = load_proto(msg.raw_user, True)
+            wa_msg = construct_message(
+                wa_chat_id, user_jid.User, msg.wa_id, None, "g.us", user_jid.Server, Msg
+            )
+            rep = await bot.client.reply_message(text, wa_msg, to=wa_jid)
+        else:
+            rep = await bot.client.send_message(wa_jid, text)
+        return await save_message(
+            wa_chat_id,
+            chat_id,
+            None,
+            rep.Message,
+            event.id,
+            rep.ID,
+            timestamp=rep.Timestamp,
+        )
+    except Exception:
+        await logger(Exception)
+
+
+async def forward_rich_messages(event):
+    """Forwards rich messages to WA from a Tg channel"""
+    try:
+        chat_id = event.chat_id
+        if not (
+            subscribed_info := bot.group_dict.setdefault("subscribed_channels", {}).get(
+                chat_id
+            )
+        ):
+            return
+
+        func_list = [
+            forward_rich_message(event, chat_id) for chat_id in subscribed_info.get("chats")
+        ]
+        await asyncio.gather(*func_list)
+    except Exception:
+        await logger(Exception)
+
+
+async def forward_rich_message(event, wa_chat_id):
+    try:
+        msg = None
+        chat_id = event.chat_id
+        text = rich_message_to_whatsapp(event.rich_message)
+        wa_jid = jid.build_jid(wa_chat_id, "g.us")
+        text = get_subscription_header(event) + text
         if event.reply_to:
             msg = await get_message(wa_chat_id, chat_id, event.reply_to.reply_to_msg_id)
         if msg:
@@ -323,7 +374,6 @@ async def forward_audio(event, wa_chat_id, audio):
         msg = wa_msg = None
         text = event.raw_text
         wa_jid = jid.build_jid(wa_chat_id, "g.us")
-        get_subscription_header
         text = get_subscription_header(event) + conv_tgmd_to_wamd(text, event.entities)
         if event.reply_to:
             msg = await get_message(wa_chat_id, chat_id, event.reply_to.reply_to_msg_id)
@@ -513,7 +563,10 @@ async def relay_edit(event, wa_chat_id):
         msg = await get_message(wa_chat_id, chat_id, msg_id)
         if not msg:
             return
-        text = get_subscription_header(event) + conv_tgmd_to_wamd(text, event.entities)
+        if event.rich_message:
+            text = rich_message_to_whatsapp(event.rich_message)
+        else:
+            text = get_subscription_header(event) + conv_tgmd_to_wamd(text, event.entities)
         update_data, edit_msg = get_tg_edit_data(text, msg.raw)
         if not update_data:
             await logger(
@@ -609,6 +662,9 @@ def add_forward_handlers():
     client.add_event_handler(forward_images, events.NewMessage(func=lambda e: e.photo))
     client.add_event_handler(
         forward_stickers, events.NewMessage(func=lambda e: e.sticker)
+    )
+    client.add_event_handler(
+        forward_rich_messages, events.NewMessage(func=lambda e: e.rich_message)
     )
     client.add_event_handler(
         forward_texts,
