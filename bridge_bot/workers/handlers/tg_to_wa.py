@@ -34,8 +34,10 @@ from bridge_bot.utils.msg_utils import (
     load_proto,
     replace_mentions_for_wa,
 )
+from bridge_bot.utils.ordering import hold_target_turn
 from bridge_bot.utils.os_utils import s_remove
 from bridge_bot.utils.parse_rich_message import rich_message_to_whatsapp
+from bridge_bot.utils.rich_media import download_rich_media, send_rich_media
 from bridge_bot.utils.tg_transfer import download_file
 
 # To Do: check if file size is properly within constraints
@@ -106,7 +108,8 @@ async def rich_message_to_wa(event):
             )
         else:
             rep = await bot.client.send_message(wa_jid, text, mentions_are_lids=True)
-        return await save_message(
+        # The text is saved first, so edits and replies look it up.
+        await save_message(
             wa_chat_id,
             chat_id,
             None,
@@ -115,6 +118,20 @@ async def rich_message_to_wa(event):
             rep.ID,
             timestamp=rep.Timestamp,
         )
+        for item in await download_rich_media(event):
+            try:
+                rep = await send_rich_media(wa_jid, item)
+                await save_message(
+                    wa_chat_id,
+                    chat_id,
+                    None,
+                    rep.Message,
+                    event.id,
+                    rep.ID,
+                    timestamp=rep.Timestamp,
+                )
+            except Exception:
+                await logger(Exception)
     except Exception:
         await logger(Exception)
 
@@ -462,27 +479,33 @@ async def delete_for_wa(event):
             return
         wa_chat_id = bridge_info.get("wa_chat")
         for msg_id in event.deleted_ids:
-            msg = await get_message(wa_chat_id, chat_id, msg_id)
-            if not msg:
-                continue
-            user_jid = load_proto(msg.raw_user, True)
-            try:
-                await bot.client.revoke_message(
-                    jid.build_jid(wa_chat_id, "g.us"), user_jid, msg.wa_id
-                )
-            except Exception:
-                await logger(Exception)
-            status = await delete_message(wa_chat_id, chat_id, msg_id)
-            if not status:
-                await logger(
-                    e=f"@delete_for_wa: Failed to deleted message from database, msg;\n{msg}",
-                    error=True,
-                )
-            # clean reaction messages in database (on both end)
-            await delete_message(wa_chat_id, chat_id, msg_id, is_reaction=True)
-            await delete_message(wa_chat_id, chat_id, wa_id=msg.wa_id, is_reaction=True)
+            # Rich messages keep a row for each attachment; revoke them all.
+            while msg := await get_message(wa_chat_id, chat_id, msg_id):
+                if not await revoke_for_wa(wa_chat_id, chat_id, msg_id, msg):
+                    break
     except Exception:
         await logger(Exception)
+
+
+async def revoke_for_wa(wa_chat_id, chat_id, msg_id, msg) -> bool:
+    """Revokes one bridged WA message and drops its database row."""
+    user_jid = load_proto(msg.raw_user, True)
+    try:
+        await bot.client.revoke_message(
+            jid.build_jid(wa_chat_id, "g.us"), user_jid, msg.wa_id
+        )
+    except Exception:
+        await logger(Exception)
+    status = await delete_message(wa_chat_id, chat_id, wa_id=msg.wa_id)
+    if not status:
+        await logger(
+            e=f"@delete_for_wa: Failed to deleted message from database, msg;\n{msg}",
+            error=True,
+        )
+    # clean reaction messages in database (on both end)
+    await delete_message(wa_chat_id, chat_id, msg_id, is_reaction=True)
+    await delete_message(wa_chat_id, chat_id, wa_id=msg.wa_id, is_reaction=True)
+    return status
 
 
 async def edit_for_wa(event):
@@ -536,6 +559,8 @@ async def handle_reaction_update(event):
     chat_id = int(f"-100{event.peer.channel_id}")
     if not (bridge_info := bot.group_dict.setdefault("tg_bridges", {}).get(chat_id)):
         return
+    # Wait for the message if it's still being bridged.
+    await hold_target_turn("tg", chat_id, [event.msg_id])
 
     reaction_emoji = None
 
@@ -653,6 +678,7 @@ def add_tg_bridge_handlers():
             text_to_wa,
             [
                 lambda e: e.text
+                and not e.rich_message
                 and (
                     not e.media
                     or (e.media and isinstance(e.media, MessageMediaWebPage))

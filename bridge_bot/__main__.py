@@ -16,6 +16,7 @@ from . import (
 )
 from .startup.after import on_startup
 from .utils.events import POLL, Event, on_message
+from .utils.ordering import add_order_end_handlers, add_order_handlers
 from .utils.os_utils import re_x
 from .utils.sudo_button_utils import poll_as_button_handler
 from .workers.handlers.dev import add_dev_handlers
@@ -68,6 +69,12 @@ async def _(client: NewAClient, message: MessageEv):
 
 ############ FILTERED ############
 
+# Bridged chats are kept in order from the start of an update until its
+# bridge handlers are done, so these must come before the command handlers.
+add_order_handlers()
+add_forward_handlers()
+add_tg_bridge_handlers()
+add_order_end_handlers()
 
 add_dev_handlers()
 add_manage_handlers()
@@ -77,8 +84,6 @@ add_tools_handlers()
 
 ############ AUTO ############
 
-add_forward_handlers()
-add_tg_bridge_handlers()
 add_wa_bridge_handlers()
 
 

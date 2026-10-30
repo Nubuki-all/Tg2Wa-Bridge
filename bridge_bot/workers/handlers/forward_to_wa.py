@@ -28,6 +28,7 @@ from bridge_bot.utils.msg_utils import (
 )
 from bridge_bot.utils.os_utils import s_remove
 from bridge_bot.utils.parse_rich_message import rich_message_to_whatsapp
+from bridge_bot.utils.rich_media import download_rich_media, send_rich_media
 from bridge_bot.utils.tg_transfer import download_file
 
 
@@ -92,8 +93,9 @@ async def forward_rich_messages(event):
         ):
             return
 
+        media = await download_rich_media(event)
         func_list = [
-            forward_rich_message(event, chat_id)
+            forward_rich_message(event, chat_id, media)
             for chat_id in subscribed_info.get("chats")
         ]
         await asyncio.gather(*func_list)
@@ -101,7 +103,7 @@ async def forward_rich_messages(event):
         await logger(Exception)
 
 
-async def forward_rich_message(event, wa_chat_id):
+async def forward_rich_message(event, wa_chat_id, media):
     try:
         msg = None
         chat_id = event.chat_id
@@ -119,7 +121,8 @@ async def forward_rich_message(event, wa_chat_id):
             rep = await bot.client.reply_message(text, wa_msg, to=wa_jid)
         else:
             rep = await bot.client.send_message(wa_jid, text)
-        return await save_message(
+        # The text is saved first, so edits and replies look it up.
+        await save_message(
             wa_chat_id,
             chat_id,
             None,
@@ -128,6 +131,20 @@ async def forward_rich_message(event, wa_chat_id):
             rep.ID,
             timestamp=rep.Timestamp,
         )
+        for item in media:
+            try:
+                rep = await send_rich_media(wa_jid, item)
+                await save_message(
+                    wa_chat_id,
+                    chat_id,
+                    None,
+                    rep.Message,
+                    event.id,
+                    rep.ID,
+                    timestamp=rep.Timestamp,
+                )
+            except Exception:
+                await logger(Exception)
     except Exception:
         await logger(Exception)
 
@@ -567,9 +584,8 @@ async def relay_edit(event, wa_chat_id):
         if event.rich_message:
             text = rich_message_to_whatsapp(event.rich_message)
         else:
-            text = get_subscription_header(event) + conv_tgmd_to_wamd(
-                text, event.entities
-            )
+            text = conv_tgmd_to_wamd(text, event.entities)
+        text = get_subscription_header(event) + text
         update_data, edit_msg = get_tg_edit_data(text, msg.raw)
         if not update_data:
             await logger(
@@ -630,12 +646,16 @@ async def relay_delete(event, wa_chat_id):
                 wa_msg,
                 to=jid.build_jid(wa_chat_id, "g.us"),
             )
-            status = await delete_message(wa_chat_id, chat_id, msg_id)
-            if not status:
-                await logger(
-                    e=f"@relay_delete: Failed to deleted message from database, msg;\n{msg}",
-                    error=True,
-                )
+            # Rich messages also keep a row for each attachment.
+            while msg:
+                status = await delete_message(wa_chat_id, chat_id, wa_id=msg.wa_id)
+                if not status:
+                    await logger(
+                        e=f"@relay_delete: Failed to deleted message from database, msg;\n{msg}",
+                        error=True,
+                    )
+                    break
+                msg = await get_message(wa_chat_id, chat_id, msg_id)
     except Exception:
         await logger(Exception)
 
@@ -671,7 +691,9 @@ def add_forward_handlers():
     )
     client.add_event_handler(
         forward_texts,
-        events.NewMessage(func=lambda e: e.message.message and not e.media),
+        events.NewMessage(
+            func=lambda e: e.message.message and not (e.media or e.rich_message)
+        ),
     )
     client.add_event_handler(
         forward_vids,
