@@ -34,6 +34,7 @@ from bridge_bot.utils.msg_utils import (
     load_proto,
     replace_mentions_for_wa,
 )
+from bridge_bot.utils.ordering import hold_target_turn
 from bridge_bot.utils.os_utils import s_remove
 from bridge_bot.utils.parse_rich_message import rich_message_to_whatsapp
 from bridge_bot.utils.rich_media import download_rich_media, send_rich_media
@@ -558,6 +559,8 @@ async def handle_reaction_update(event):
     chat_id = int(f"-100{event.peer.channel_id}")
     if not (bridge_info := bot.group_dict.setdefault("tg_bridges", {}).get(chat_id)):
         return
+    # Wait for the message if it's still being bridged.
+    await hold_target_turn("tg", chat_id, [event.msg_id])
 
     reaction_emoji = None
 

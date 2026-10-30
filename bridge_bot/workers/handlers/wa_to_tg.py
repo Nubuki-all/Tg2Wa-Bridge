@@ -21,6 +21,7 @@ from bridge_bot.utils.msg_utils import (
     replace_wa_mentions,
     whatsapp_md_to_telegram_md,
 )
+from bridge_bot.utils.ordering import hold_new_message_turn, hold_target_turn
 from bridge_bot.utils.parse_md import parse as custom_parse
 from bridge_bot.utils.tg_transfer import upload_file
 
@@ -401,6 +402,18 @@ async def forward_events(event, _, client):
         return
     if not (handler := filter_dict.get(event.short_name)):
         return
+    # New messages keep their order; replies and the rest wait only for
+    # the message they target.
+    if event.short_name == "reaction":
+        await hold_target_turn("wa", chat_id, [event.reaction.key.ID])
+    elif event.short_name == "protocol":
+        if event.is_revoke:
+            await hold_target_turn("wa", chat_id, [event.revoked_id])
+        elif event.is_edit:
+            await hold_target_turn("wa", chat_id, [event.edited_id])
+    else:
+        reply_to = event.reply_to_message.id if event.reply_to_message else None
+        await hold_new_message_turn("wa", chat_id, event.id, reply_to)
     forwarders = [
         handler(event, bridge.get("tg_chat"), client)
         for bridge in bot.group_dict.setdefault("tg_bridges", {}).values()
