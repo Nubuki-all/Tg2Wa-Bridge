@@ -17,7 +17,8 @@ def rich_text_to_whatsapp(obj) -> str:
     if obj is None or isinstance(obj, types.TextEmpty):
         return ""
 
-    # Some fields (PageRelatedArticle.title, TextWithEntities.text) are plain str.
+    # Some fields (PageRelatedArticle.title, TextWithEntities.text) are plain
+    # str.
     if isinstance(obj, str):
         return obj
 
