@@ -3,11 +3,13 @@ import io
 from datetime import datetime as dt
 
 from telethon.types import DocumentAttributeSticker, InputStickerSetEmpty
-from wand.image import Image as wand_image
 
 from bridge_bot.config import bot
 from bridge_bot.utils.log_utils import logger
-from bridge_bot.utils.media_utils import get_video_thumbnail
+from bridge_bot.utils.media_utils import (
+    get_video_thumbnail,
+    webp_to_tg_video_sticker,
+)
 from bridge_bot.utils.msg_store import (
     delete_message,
     edit_message,
@@ -227,12 +229,18 @@ async def sticker_to_tg(event, tg_chat_id, client):
         ext = "webp"
         msg = None
         sticker = await event.download()
+        if not sticker:
+            raise ValueError(f"Sticker {event.id} downloaded empty")
         if event.sticker.isAnimated:
-            ext = "webm"
-            with wand_image(blob=sticker, format="webp") as img:
-                with img.convert("webm") as img2:
-                    img2.coalesce()
-                    sticker = img2.make_blob(format="webm")
+            try:
+                sticker = await webp_to_tg_video_sticker(sticker)
+                ext = "webm"
+            except Exception as e:
+                # Still bridge it, as the original WebP.
+                await logger(
+                    e=f"@sticker_to_tg: Couldn't convert animated sticker {event.id}: {e}",
+                    warning=True,
+                )
         sticker = io.BytesIO(sticker)
         sticker.name = "sticker." + ext
         text = ""

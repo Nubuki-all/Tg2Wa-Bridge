@@ -1,9 +1,11 @@
 import asyncio
+import shutil
 import uuid
-from os import cpu_count
+from os import cpu_count, makedirs
 
 from neonize.utils.ffmpeg import AFFmpeg
 from neonize.utils.sticker import add_exif
+from wand.image import Image as wand_image
 
 from bridge_bot.config import bot
 
@@ -284,3 +286,116 @@ async def get_video_thumbnail(file, with_dur=False):
         return buf
     except Exception:
         await logger(Exception)
+
+
+TG_VIDEO_STICKER_MAX = 256 * 1024
+# Longer stickers are cut to just under 10 seconds.
+TG_VIDEO_STICKER_MAX_SECONDS = 9.9
+TG_VIDEO_STICKER_ATTEMPTS = 5
+
+
+def _webp_frames(sticker: bytes, folder: str) -> list[tuple[str, float]]:
+    """Saves each full frame of an animated WebP; returns (path, seconds)."""
+    frames = []
+    with wand_image(blob=sticker, format="webp") as img:
+        # Frames can cover only part of the canvas; make each one whole.
+        img.coalesce()
+        for i, frame in enumerate(img.sequence):
+            path = f"{folder}/{i:04d}.png"
+            with wand_image(image=frame) as page:
+                # Temporary file: favour speed over size.
+                page.options["png:compression-level"] = "1"
+                page.save(filename=path)
+            ticks = frame.ticks_per_second or 100
+            # Players show frames with no delay for 100ms.
+            seconds = frame.delay / ticks if frame.delay else 0.1
+            frames.append((path, max(seconds, 0.02)))
+    return frames
+
+
+async def webp_to_tg_video_sticker(sticker: bytes) -> bytes:
+    """Converts an animated WebP to a WebM Telegram accepts as a video sticker:
+    VP9 with alpha, 512px on the longest side, at most 30 fps and 256 KB.
+
+    Telegram's docs say 3 seconds at most, but longer video stickers are
+    common and play fine, so up to TG_VIDEO_STICKER_MAX_SECONDS is kept, and
+    the file is written without a duration, like those stickers are."""
+    folder = f"temp/{uuid.uuid4()}"
+    makedirs(folder)
+    try:
+        frames = await asyncio.to_thread(_webp_frames, sticker, folder)
+        if not frames:
+            raise ValueError("Animated sticker has no frames")
+        listing = "".join(
+            f"file '{path.rsplit('/', 1)[1]}'\nduration {seconds}\n"
+            for path, seconds in frames
+        )
+        # The concat demuxer ignores the last duration unless the file repeats.
+        listing += f"file '{frames[-1][0].rsplit('/', 1)[1]}'\n"
+        await write_binary(f"{folder}/frames.txt", listing.encode())
+        outfile = f"{folder}/sticker.webm"
+        duration = min(
+            sum(seconds for _, seconds in frames), TG_VIDEO_STICKER_MAX_SECONDS
+        )
+        # Quality first, with the bitrate capped so the length should fit.
+        # VP9 often overshoots a low cap, so each retry scales the cap by how
+        # far over the last try was, and lowers the quality a step.
+        crf = 35
+        bitrate = TG_VIDEO_STICKER_MAX * 8 * 0.9 / duration
+        for _ in range(TG_VIDEO_STICKER_ATTEMPTS):
+            cmd = [
+                "ffmpeg",
+                "-v",
+                "error",
+                "-f",
+                "concat",
+                "-i",
+                f"{folder}/frames.txt",
+                "-vf",
+                "fps=30,scale=512:512:force_original_aspect_ratio=decrease"
+                ":force_divisible_by=2:flags=lanczos,format=yuva420p",
+                # Also stops the repeated last frame adding a little extra.
+                "-t",
+                f"{duration:.3f}",
+                "-an",
+                "-c:v",
+                "libvpx-vp9",
+                "-crf",
+                str(crf),
+                "-b:v",
+                f"{int(bitrate / 1000)}k",
+                "-deadline",
+                "good",
+                "-cpu-used",
+                "4",
+                "-row-mt",
+                "1",
+                # Don't write the duration into the file.
+                "-live",
+                "1",
+                "-y",
+                outfile,
+            ]
+            async with vstick_sem:
+                process, stdout, stderr = await enshell(cmd)
+            if process.returncode != 0:
+                raise RuntimeError(
+                    f"stderr: {stderr} Return code: {process.returncode}"
+                )
+            webm = await read_binary(outfile)
+            if not webm:
+                raise RuntimeError(f"ffmpeg wrote an empty sticker; stderr: {stderr}")
+            if len(webm) <= TG_VIDEO_STICKER_MAX:
+                return webm
+            log(
+                e=f"@webp_to_tg_video_sticker: {len(webm)} bytes at crf {crf}, "
+                f"{int(bitrate / 1000)}k; over Telegram's limit, trying smaller"
+            )
+            bitrate *= TG_VIDEO_STICKER_MAX * 0.9 / len(webm)
+            crf = min(crf + 5, 50)
+        raise RuntimeError(
+            f"Sticker still {len(webm)} bytes after "
+            f"{TG_VIDEO_STICKER_ATTEMPTS} tries"
+        )
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
