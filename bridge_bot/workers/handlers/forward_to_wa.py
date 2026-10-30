@@ -567,9 +567,8 @@ async def relay_edit(event, wa_chat_id):
         if event.rich_message:
             text = rich_message_to_whatsapp(event.rich_message)
         else:
-            text = get_subscription_header(event) + conv_tgmd_to_wamd(
-                text, event.entities
-            )
+            text = conv_tgmd_to_wamd(text, event.entities)
+        text = get_subscription_header(event) + text
         update_data, edit_msg = get_tg_edit_data(text, msg.raw)
         if not update_data:
             await logger(
@@ -671,7 +670,9 @@ def add_forward_handlers():
     )
     client.add_event_handler(
         forward_texts,
-        events.NewMessage(func=lambda e: e.message.message and not e.media),
+        events.NewMessage(
+            func=lambda e: e.message.message and not (e.media or e.rich_message)
+        ),
     )
     client.add_event_handler(
         forward_vids,

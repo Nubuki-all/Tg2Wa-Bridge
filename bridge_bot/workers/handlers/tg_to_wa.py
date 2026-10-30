@@ -653,6 +653,7 @@ def add_tg_bridge_handlers():
             text_to_wa,
             [
                 lambda e: e.text
+                and not e.rich_message
                 and (
                     not e.media
                     or (e.media and isinstance(e.media, MessageMediaWebPage))
