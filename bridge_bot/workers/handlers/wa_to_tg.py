@@ -25,6 +25,11 @@ from bridge_bot.utils.ordering import hold_new_message_turn, hold_target_turn
 from bridge_bot.utils.parse_md import parse as custom_parse
 from bridge_bot.utils.tg_transfer import upload_file
 
+# A reaction can arrive while its message is still being bridged.
+REACTION_RETRIES = 3
+REACTION_RETRY_DELAY = 5
+retry_tasks = set()
+
 
 async def text_to_tg(event, tg_chat_id, client):
     """Forwards text messages to TG"""
@@ -333,13 +338,27 @@ async def edit_del_for_tg(event, tg_chat_id, client):
         return await edit_for_tg(event, tg_chat_id, client)
 
 
-async def handle_reaction_msg(event, tg_chat_id, client):
+async def retry_reaction_msg(event, tg_chat_id, client, retries):
+    await asyncio.sleep(REACTION_RETRY_DELAY)
+    await handle_reaction_msg(event, tg_chat_id, client, retries)
+
+
+async def handle_reaction_msg(event, tg_chat_id, client, retries=REACTION_RETRIES):
     """Handles Whatsapp reaction updates and bridges them to Telegram as a live message"""
     try:
         chat_id = event.chat.id
         msg_id = event.reaction.key.ID
         msg_ = await get_message(chat_id, tg_chat_id, wa_id=msg_id)
         if not msg_:
+            if retries:
+                # The message may still be on its way; check again later
+                # without holding up the rest of the chat.
+                task = asyncio.create_task(
+                    retry_reaction_msg(event, tg_chat_id, client, retries - 1)
+                )
+                retry_tasks.add(task)
+                task.add_done_callback(retry_tasks.discard)
+                return
             await logger(
                 e=f"Original Whatsapp message with id: {msg_id} not found for reaction in chat: {chat_id}",
                 warning=True,
