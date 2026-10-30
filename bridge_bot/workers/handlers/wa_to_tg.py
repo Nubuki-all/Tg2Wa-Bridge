@@ -6,10 +6,7 @@ from telethon.types import DocumentAttributeSticker, InputStickerSetEmpty
 
 from bridge_bot.config import bot
 from bridge_bot.utils.log_utils import logger
-from bridge_bot.utils.media_utils import (
-    get_video_thumbnail,
-    webp_to_tg_video_sticker,
-)
+from bridge_bot.utils.media_utils import get_video_thumbnail, webp_to_tg_video_sticker
 from bridge_bot.utils.msg_store import (
     delete_message,
     edit_message,
