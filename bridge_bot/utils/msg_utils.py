@@ -1,4 +1,5 @@
 import argparse
+import copy
 import re
 from functools import partial
 
@@ -275,10 +276,26 @@ DELIMITERS = {
 }
 
 
+def snap_to_surrogates(text, entity):
+    """Widens an entity that starts or ends inside a surrogate pair (half an
+    emoji), so slicing it can't leave a lone surrogate."""
+    start = min(max(entity.offset, 0), len(text))
+    end = min(max(start + entity.length, start), len(text))
+    if 0 < start < len(text) and "\udc00" <= text[start] <= "\udfff":
+        start -= 1
+    if 0 < end < len(text) and "\udc00" <= text[end] <= "\udfff":
+        end += 1
+    entity.offset, entity.length = start, end - start
+
+
 def whatsapp_unparse(raw_text, entities):
     # Convert to surrogate text for offset safety
     text = add_surrogate(raw_text)
-    entities = list(entities)  # Make mutable copy
+    # Copies: offsets are changed below, and the same message is converted
+    # once per bridged chat.
+    entities = [copy.copy(e) for e in entities]
+    for entity in entities:
+        snap_to_surrogates(text, entity)
 
     # Process hyperlinks first (reverse order to handle offsets)
     text_url_entities = [
